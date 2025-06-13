@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,23 +16,22 @@
     }
 
     #game-container {
-      width: 1280px;
-      height: 720px;
-      margin: 0 auto;
+      width: 100vw;
+      height: 100vh;
       background: url('background.png') center center no-repeat;
       background-size: contain;
       position: relative;
     }
 
     #player {
-      width: 320px;    /* 10x scale */
+      width: 320px; /* scaled down */
       height: 320px;
       background: url('player_idle.png') no-repeat center center;
       background-size: contain;
       image-rendering: pixelated;
       position: absolute;
       left: 0;
-      bottom: 100px;   /* <-- DEFAULT VERTICAL POSITION in CSS: this should match groundY in JS. Decrease this value to move the player DOWN, increase to move UP. */   /* <-- DEFAULT VERTICAL POSITION in CSS: this should match groundY in JS. Decrease this value to move the player DOWN, increase to move UP. */
+      bottom: 220px; /* adjusted to stand on green */
       transform-origin: left bottom;
     }
 
@@ -59,55 +59,39 @@
     const player = document.getElementById('player');
     const tileSize = 32;
     const playerWidth = 320;
-    const gameContainer = document.getElementById('game-container');
-    const backgroundWidth = gameContainer.clientWidth;
-
-    // INITIAL POSITIONS
-    let posX = Math.floor(backgroundWidth / 2 / tileSize) * tileSize;
-    let posY = 0;            // Vertical offset above ground (jump height)
+    let posX = Math.floor(window.innerWidth / 2 / tileSize) * tileSize;
+    let posY = 0;
     let isJumping = false;
     let jumpSpeed = 0;
     const gravity = 0.8;
-
-    // groundY determines the player's base bottom offset (in CSS and JS)
-    // Increasing groundY moves the player UP; decreasing moves DOWN.
-    const groundY = 100;     /* <-- DEFAULT GROUND ALIGNMENT in JS: this should match the CSS bottom value above. Decrease to lower the player, increase to raise the player. */     /* <-- DEFAULT GROUND ALIGNMENT in JS: this should match the CSS bottom value above. Decrease to lower the player, increase to raise the player. */ <-- DEFAULT GROUND ALIGNMENT: match this to CSS bottom */
+    const groundY = 220;
 
     function updatePlayerPosition() {
       player.style.left = posX + 'px';
     }
 
-    let keysHeld = {};
-    let alertTriggered = false;
-
     document.addEventListener('keydown', (e) => {
-      keysHeld[e.key.toLowerCase()] = true;
-    });
+      if (e.repeat) return;
 
-    document.addEventListener('keyup', (e) => {
-      keysHeld[e.key.toLowerCase()] = false;
+      if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
+        posX = Math.max(posX - tileSize, 0);
+        player.classList.add('flipped');
+      } else if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') {
+        posX = Math.min(posX + tileSize, window.innerWidth - playerWidth);
+        player.classList.remove('flipped');
+      } else if (e.key === ' ' && !isJumping) {
+        isJumping = true;
+        jumpSpeed = 15;
+      }
+
+      if (posX <= 0 || posX + playerWidth >= window.innerWidth) {
+        alert("Transition to wizard here.");
+      }
+
+      updatePlayerPosition();
     });
 
     function gameLoop() {
-      const maxX = backgroundWidth - playerWidth;
-
-      if (keysHeld['arrowleft'] || keysHeld['a']) {
-        posX = Math.max(posX - 4, 0);
-        player.classList.add('flipped');
-        if (posX === 0 && !alertTriggered) {
-          alert("Transition to wizard here.");
-          alertTriggered = true;
-        }
-      }
-      if (keysHeld['arrowright'] || keysHeld['d']) {
-        posX = Math.min(posX + 4, maxX);
-        player.classList.remove('flipped');
-        if (posX === maxX && !alertTriggered) {
-          alert("Transition to wizard here.");
-          alertTriggered = true;
-        }
-      }
-
       if (isJumping) {
         posY += jumpSpeed;
         jumpSpeed -= gravity;
@@ -115,15 +99,11 @@
           posY = 0;
           isJumping = false;
         }
-        // Set vertical position during jump
         player.style.bottom = (groundY + posY) + 'px';
       }
-
-      updatePlayerPosition();
       requestAnimationFrame(gameLoop);
     }
 
-    // Start the game loop
     updatePlayerPosition();
     gameLoop();
   </script>
