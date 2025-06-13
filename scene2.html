@@ -64,27 +64,28 @@
     const player = document.getElementById('player');
     const container = document.getElementById('game-container');
     const playerWidth = 320;
-    const maxX = container.clientWidth - playerWidth;
-    let posX = (container.clientWidth / 2) - (playerWidth / 2);
+    // Determine actual background display size for contain
+    const bgSize = getComputedStyle(container).backgroundSize.split(' ');
+    const bgWidth = parseFloat(bgSize[0]);
+    const bgHeight = parseFloat(bgSize[1]);
+    // Calculate horizontal bounds based on centered background
+    const minX = (container.clientWidth - bgWidth) / 2;
+    const maxX = minX + bgWidth - playerWidth;
+    // Initial positions
+    let posX = minX + (bgWidth - playerWidth) / 2;
     let posY = 0;
     let isJumping = false;
     let jumpSpeed = 0;
     const gravity = 0.8;
-    const groundY = 80;  // Must match CSS bottom for baseline (lowered by 10px)  // Must match CSS bottom for baseline (lowered 10px)  // Must match CSS bottom for baseline
+    const groundY = 80;  // Must match CSS bottom for baseline
     let keysHeld = {};
     let alertTriggered = false;
-    // Disable movement until speech is dismissed
     let canMove = false;
-    // Display initial speech bubble above player
+    // Initial speech
     const bubble = document.createElement('div');
     bubble.className = 'speech';
     bubble.textContent = 'НУ И ГДЕ МОИ ПОДАРКИ?! КУДА ТЕПЕРЬ ИДТИ - НАЛЕВО ИЛИ НАПРАВО?';
     player.appendChild(bubble);
-
-    function updatePlayerPosition() {
-      player.style.left = posX + 'px';
-      player.style.bottom = (groundY + posY) + 'px';
-    }
 
     document.addEventListener('keydown', e => {
       keysHeld[e.key.toLowerCase()] = true;
@@ -93,57 +94,40 @@
       keysHeld[e.key.toLowerCase()] = false;
     });
 
+    function updatePlayerPosition() {
+      player.style.left = posX + 'px';
+      player.style.bottom = (groundY + posY) + 'px';
+    }
+
     function gameLoop() {
       // Dismiss speech on first directional input
       if (!canMove && (keysHeld['arrowleft'] || keysHeld['a'] || keysHeld['arrowright'] || keysHeld['d'])) {
         canMove = true;
         bubble.remove();
       }
-      // Movement only after speech
       if (canMove) {
-        // Left movement
+        // Smooth horizontal movement
         if (keysHeld['arrowleft'] || keysHeld['a']) {
-          posX = Math.max(0, posX - 4);
+          posX = Math.max(minX, posX - 4);
           player.classList.add('flipped');
-          if (posX === 0 && !alertTriggered) { alert('Transition to wizard here.'); alertTriggered = true; }
-        }
-        // Right movement
-        if (keysHeld['arrowright'] || keysHeld['d']) {
+          if (posX === minX && !alertTriggered) { alert('Transition to wizard here.'); alertTriggered = true; }
+        } else if (keysHeld['arrowright'] || keysHeld['d']) {
           posX = Math.min(maxX, posX + 4);
           player.classList.remove('flipped');
           if (posX === maxX && !alertTriggered) { alert('Transition to wizard here.'); alertTriggered = true; }
         }
         // Jump
         if ((keysHeld[' '] || keysHeld['spacebar']) && !isJumping) {
-          isJumping = true; jumpSpeed = 15;
+          isJumping = true;
+          jumpSpeed = 15;
         }
       }
       // Apply jump physics
       if (isJumping) {
-        posY += jumpSpeed; jumpSpeed -= gravity;
+        posY += jumpSpeed;
+        jumpSpeed -= gravity;
         if (posY <= 0) { posY = 0; isJumping = false; }
       }
-      // Smooth movement without initial teleport
-      if (keysHeld['arrowleft'] || keysHeld['a']) {
-        posX = Math.max(0, posX - 4);
-        player.classList.add('flipped');
-        if (posX === 0 && !alertTriggered) { alert('Transition to wizard here.'); alertTriggered = true; }
-      }
-      if (keysHeld['arrowright'] || keysHeld['d']) {
-        posX = Math.min(maxX, posX + 4);
-        player.classList.remove('flipped');
-        if (posX === maxX && !alertTriggered) { alert('Transition to wizard here.'); alertTriggered = true; }
-      }
-
-      // Jump logic
-      if ((keysHeld[' '] || keysHeld['spacebar']) && !isJumping) {
-        isJumping = true; jumpSpeed = 15;
-      }
-      if (isJumping) {
-        posY += jumpSpeed; jumpSpeed -= gravity;
-        if (posY <= 0) { posY = 0; isJumping = false; }
-      }
-
       updatePlayerPosition();
       requestAnimationFrame(gameLoop);
     }
