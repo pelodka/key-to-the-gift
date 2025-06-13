@@ -12,15 +12,14 @@
       height: 100%;
       overflow: hidden;
       background-color: black;
-      color: lime;
       font-family: 'Courier New', Courier, monospace;
     }
 
     #game-container {
       width: 100vw;
       height: 100vh;
-      background: url('background.png') no-repeat center center;
-      background-size: cover;
+      background: url('background.png') center center no-repeat;
+      background-size: contain;
       position: relative;
     }
 
@@ -33,30 +32,33 @@
     }
 
     .gift-card {
-      width: 64px;
-      height: 96px;
-      margin: 20px;
+      width: 192px;
+      height: 288px;
+      margin: 30px;
       display: inline-block;
       border: 2px solid white;
       cursor: pointer;
     }
 
     .gift-card.selected {
-      border: 4px dashed yellow;
+      border: 6px dashed yellow;
     }
 
     #gift-section {
       display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       text-align: center;
-      margin-top: 150px;
     }
 
     #get-presents {
       margin-top: 30px;
       pointer-events: none;
       opacity: 0.5;
-      width: 200px;
-      height: 64px;
+      width: 600px;
+      height: 192px;
       background: url('button01.png') no-repeat center center;
       background-size: contain;
       border: none;
@@ -93,17 +95,14 @@
 </head>
 <body>
   <div id="game-container">
-    <!-- Initial GO Button -->
     <div id="start-screen" class="centered">
       <button id="go-btn">GO</button>
     </div>
 
-    <!-- Loading Screen -->
     <div id="loading-screen" class="centered" style="display:none">
       <p>LOADING...</p>
     </div>
 
-    <!-- Gift Interaction Screen -->
     <div id="gift-section">
       <div>
         <img class="gift-card" id="gift1" src="gift_card_1.png" alt="Gift Card 1">
@@ -112,7 +111,6 @@
       <button id="get-presents"></button>
     </div>
 
-    <!-- Flying Dragon Placeholder -->
     <div class="dragon" id="dragon" style="display: none;"></div>
   </div>
 
@@ -129,7 +127,6 @@
 
     let selectedGifts = new Set();
 
-    // Start button triggers fake loading
     goBtn.addEventListener("click", () => {
       startScreen.style.display = "none";
       loadingScreen.style.display = "block";
