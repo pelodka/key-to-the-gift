@@ -23,15 +23,15 @@
     }
 
     #player {
-      width: 64px;
-      height: 64px;
-      background: url('player_idle.png') no-repeat center center;
-      background-size: contain;
+      width: 640px; /* 10x bigger */
+      height: 640px;
+      background: url('player_idle.png') no-repeat left top;
+      background-size: 2560px 640px; /* sprite sheet scaled */
       image-rendering: pixelated;
       position: absolute;
       left: 0;
-      bottom: 135px;
-      transition: transform 0.1s;
+      bottom: 300px; /* raised above ground */
+      transform-origin: left bottom;
     }
 
     #player.flipped {
@@ -62,7 +62,7 @@
     let isJumping = false;
     let jumpSpeed = 0;
     const gravity = 0.8;
-    const groundY = 135;
+    const groundY = 300;
     let currentFrame = 0;
     const frameCount = 4;
     let animInterval;
@@ -74,10 +74,10 @@
     function startWalking() {
       clearInterval(animInterval);
       player.style.backgroundImage = "url('player_walk.png')";
-      player.style.backgroundSize = "contain";
+      player.style.backgroundSize = "2560px 640px"; // 4 frames * 640 width
       animInterval = setInterval(() => {
         currentFrame = (currentFrame + 1) % frameCount;
-        player.style.backgroundPosition = `-${currentFrame * 64}px 0`;
+        player.style.backgroundPosition = `-${currentFrame * 640}px 0`;
       }, 120);
     }
 
