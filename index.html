@@ -191,31 +191,30 @@
             bubble.textContent = 'Ха-ха!';
             dragon.appendChild(bubble);
 
+            // Fix the cards visually where they are now
+            const card1OffsetX = gift1.offsetLeft - dragon.offsetLeft;
+            const card2OffsetX = gift2.offsetLeft - dragon.offsetLeft;
+            const cardOffsetY = gift1.offsetTop - dragon.offsetTop;
+
+            gift1.style.position = 'absolute';
+            gift2.style.position = 'absolute';
+            gift1.style.left = `${dragon.offsetLeft + card1OffsetX}px`;
+            gift2.style.left = `${dragon.offsetLeft + card2OffsetX}px`;
+            gift1.style.top = `${dragon.offsetTop + cardOffsetY}px`;
+            gift2.style.top = `${dragon.offsetTop + cardOffsetY}px`;
+            gift1.style.transform = 'scale(0.5)';
+            gift2.style.transform = 'scale(0.5)';
+
+            // Move both cards and dragon together
+            dragon.style.left = '120%';
+            gift1.style.left = 'calc(120% + 30px)';
+            gift2.style.left = 'calc(120% + 100px)';
+            gift1.style.top = '10%';
+            gift2.style.top = '10%';
+
             setTimeout(() => {
-              // Move cards in sync with dragon
-              gift1.style.position = 'absolute';
-              gift2.style.position = 'absolute';
-              gift1.style.left = 'calc(50% - 80px)';
-              gift2.style.left = 'calc(50% + 20px)';
-              gift1.style.top = 'calc(30% + 60px)';
-              gift2.style.top = 'calc(30% + 60px)';
-              gift1.style.transform = 'scale(0.5) translate(-50%, -50%)';
-              gift2.style.transform = 'scale(0.5) translate(-50%, -50%)';
-              gift1.style.transition = 'all 2s ease-in-out';
-              gift2.style.transition = 'all 2s ease-in-out';
-
-              dragon.style.left = '120%';
-              dragon.style.top = '10%';
-
-              gift1.style.left = 'calc(120% + 30px)';
-              gift2.style.left = 'calc(120% + 100px)';
-              gift1.style.top = '10%';
-              gift2.style.top = '10%';
-
-              setTimeout(() => {
-                alert("Dragon flew away with gifts. Transition to game scene here.");
-              }, 2000);
-            }, 1500);
+              alert("Dragon flew away with gifts. Transition to game scene here.");
+            }, 2000);
           }, 1000);
         }, 1000);
       }, 500);
