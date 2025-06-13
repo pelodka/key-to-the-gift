@@ -83,16 +83,18 @@
       100% { transform: translate(0, 0); }
     }
 
-    .dragon {
+    .dragon-bundle {
       position: absolute;
-      top: 100px;
-      left: -200px;
-      width: 64px;
-      height: 32px;
-      background: url('dragon.png') no-repeat center center;
-      background-size: contain;
       display: none;
       transition: all 2s ease-in-out;
+    }
+
+    .dragon {
+      width: 128px;
+      height: 64px;
+      background: url('dragon.png') no-repeat center center;
+      background-size: contain;
+      position: absolute;
     }
 
     .speech {
@@ -128,7 +130,9 @@
       <button id="get-presents"></button>
     </div>
 
-    <div class="dragon" id="dragon"></div>
+    <div id="dragon-bundle" class="dragon-bundle">
+      <div class="dragon" id="dragon"></div>
+    </div>
   </div>
 
   <script>
@@ -139,8 +143,7 @@
     const gift1 = document.getElementById("gift1");
     const gift2 = document.getElementById("gift2");
     const getBtn = document.getElementById("get-presents");
-    const dragon = document.getElementById("dragon");
-    const container = document.getElementById("game-container");
+    const dragonBundle = document.getElementById("dragon-bundle");
 
     let selectedGifts = new Set();
 
@@ -171,50 +174,43 @@
     getBtn.addEventListener("click", () => {
       if (!getBtn.classList.contains("enabled")) return;
 
-      container.classList.add("shake");
+      document.getElementById("game-container").classList.add("shake");
 
       setTimeout(() => {
-        dragon.style.display = "block";
-        dragon.style.left = "30%";
-        dragon.style.top = "20%";
-        dragon.style.width = "128px";
-        dragon.style.height = "64px";
+        dragonBundle.style.display = "block";
+        dragonBundle.style.left = "30%";
+        dragonBundle.style.top = "20%";
 
         setTimeout(() => {
-          dragon.style.left = "50%";
-          dragon.style.top = "30%";
-          dragon.style.transform = "translate(-50%, -50%) scale(3)";
+          dragonBundle.style.left = "50%";
+          dragonBundle.style.top = "30%";
+          dragonBundle.style.transform = "translate(-50%, -50%) scale(3)";
 
           setTimeout(() => {
             const bubble = document.createElement('div');
             bubble.className = 'speech';
             bubble.textContent = 'Ха-ха!';
-            dragon.appendChild(bubble);
+            dragonBundle.appendChild(bubble);
 
-            // Fix the cards visually where they are now
-            const card1OffsetX = gift1.offsetLeft - dragon.offsetLeft;
-            const card2OffsetX = gift2.offsetLeft - dragon.offsetLeft;
-            const cardOffsetY = gift1.offsetTop - dragon.offsetTop;
-
+            // Move the visible gift cards into dragonBundle
             gift1.style.position = 'absolute';
             gift2.style.position = 'absolute';
-            gift1.style.left = `${dragon.offsetLeft + card1OffsetX}px`;
-            gift2.style.left = `${dragon.offsetLeft + card2OffsetX}px`;
-            gift1.style.top = `${dragon.offsetTop + cardOffsetY}px`;
-            gift2.style.top = `${dragon.offsetTop + cardOffsetY}px`;
             gift1.style.transform = 'scale(0.5)';
             gift2.style.transform = 'scale(0.5)';
-
-            // Move both cards and dragon together
-            dragon.style.left = '120%';
-            gift1.style.left = 'calc(120% + 30px)';
-            gift2.style.left = 'calc(120% + 100px)';
-            gift1.style.top = '10%';
-            gift2.style.top = '10%';
+            gift1.style.left = '-50px';
+            gift2.style.left = '100px';
+            gift1.style.top = '70px';
+            gift2.style.top = '70px';
+            dragonBundle.appendChild(gift1);
+            dragonBundle.appendChild(gift2);
 
             setTimeout(() => {
-              alert("Dragon flew away with gifts. Transition to game scene here.");
-            }, 2000);
+              dragonBundle.style.left = '120%';
+              dragonBundle.style.top = '10%';
+              setTimeout(() => {
+                alert("Dragon flew away with gifts. Transition to game scene here.");
+              }, 2000);
+            }, 1500);
           }, 1000);
         }, 1000);
       }, 500);
