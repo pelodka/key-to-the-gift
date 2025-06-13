@@ -25,12 +25,12 @@
     #player {
       width: 640px; /* 10x bigger */
       height: 640px;
-      background: url('player_idle.png') no-repeat left top;
-      background-size: 2560px 640px; /* sprite sheet scaled */
+      background: url('player_idle.png') no-repeat 0 0;
+      background-size: contain;
       image-rendering: pixelated;
       position: absolute;
       left: 0;
-      bottom: 300px; /* raised above ground */
+      bottom: 300px;
       transform-origin: left bottom;
     }
 
@@ -65,33 +65,40 @@
     const groundY = 300;
     let currentFrame = 0;
     const frameCount = 4;
-    let animInterval;
+    let animInterval = null;
 
     function updatePlayerPosition() {
       player.style.left = posX + 'px';
     }
 
+    function showWalkingFrame(frame) {
+      player.style.backgroundPosition = `-${frame * 640}px 0`;
+    }
+
     function startWalking() {
       clearInterval(animInterval);
       player.style.backgroundImage = "url('player_walk.png')";
-      player.style.backgroundSize = "2560px 640px"; // 4 frames * 640 width
+      player.style.backgroundSize = `${640 * frameCount}px 640px`;
+      currentFrame = 0;
+      showWalkingFrame(currentFrame);
+
       animInterval = setInterval(() => {
         currentFrame = (currentFrame + 1) % frameCount;
-        player.style.backgroundPosition = `-${currentFrame * 640}px 0`;
-      }, 120);
+        showWalkingFrame(currentFrame);
+      }, 150);
     }
 
     function stopWalking() {
       clearInterval(animInterval);
-      currentFrame = 0;
       player.style.backgroundImage = "url('player_idle.png')";
-      player.style.backgroundPosition = '0 0';
       player.style.backgroundSize = "contain";
+      player.style.backgroundPosition = "center center";
     }
 
     document.addEventListener('keydown', (e) => {
       if (e.repeat) return;
       let moved = false;
+
       if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
         posX -= tileSize;
         player.classList.add('flipped');
@@ -108,13 +115,12 @@
       if (posX < 0) {
         alert("Switch to wizard1.html (left edge reached)");
         posX = 0;
-      } else if (posX + 64 > window.innerWidth) {
+      } else if (posX + 640 > window.innerWidth) {
         alert("Switch to wizard1.html (right edge reached)");
-        posX = window.innerWidth - 64;
+        posX = window.innerWidth - 640;
       }
 
       updatePlayerPosition();
-
       if (moved) startWalking();
     });
 
@@ -138,6 +144,7 @@
     }
 
     updatePlayerPosition();
+    stopWalking();
     gameLoop();
   </script>
 </body>
