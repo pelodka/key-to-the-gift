@@ -144,6 +144,7 @@
     const gift2 = document.getElementById("gift2");
     const getBtn = document.getElementById("get-presents");
     const dragonBundle = document.getElementById("dragon-bundle");
+    const dragon = document.getElementById("dragon");
 
     let selectedGifts = new Set();
 
@@ -190,15 +191,25 @@
             const bubble = document.createElement('div');
             bubble.className = 'speech';
             bubble.textContent = 'Ха-ха!';
-            dragonBundle.appendChild(bubble);
+            dragon.appendChild(bubble);
 
-            // Move the visible gift cards into dragonBundle
+            const bundleX = dragon.getBoundingClientRect().left;
+            const bundleY = dragon.getBoundingClientRect().top;
+
+            const containerRect = document.getElementById("game-container").getBoundingClientRect();
+            const absX = bundleX - containerRect.left;
+            const absY = bundleY - containerRect.top;
+
+            dragonBundle.style.left = `${absX}px`;
+            dragonBundle.style.top = `${absY}px`;
+            dragonBundle.style.transform = 'scale(3)';
+            dragonBundle.style.transition = 'all 2s ease-in-out';
+
+            // Move the visible gift cards into dragonBundle without resizing
             gift1.style.position = 'absolute';
             gift2.style.position = 'absolute';
-            gift1.style.transform = 'scale(0.5)';
-            gift2.style.transform = 'scale(0.5)';
-            gift1.style.left = '-50px';
-            gift2.style.left = '100px';
+            gift1.style.left = '-60px';
+            gift2.style.left = '120px';
             gift1.style.top = '70px';
             gift2.style.top = '70px';
             dragonBundle.appendChild(gift1);
