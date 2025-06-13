@@ -111,7 +111,7 @@
       white-space: nowrap;
     }
 
-    /* Transition overlay and animation */
+    /* Transition overlay and smoother animation */
     #transition-overlay {
       position: absolute;
       top: 0;
@@ -121,16 +121,18 @@
       background: black;
       opacity: 0;
       pointer-events: none;
+      transition: opacity 1s ease-in-out;
     }
 
     #game-container.pixelate {
-      animation: pixelateOut 0.6s forwards;
+      animation: pixelateOut 1s ease-in-out forwards;
     }
 
     @keyframes pixelateOut {
-      0%   { transform: scale(1); image-rendering: auto; }
-      50%  { transform: scale(0.05); image-rendering: pixelated; }
-      100% { transform: scale(1); opacity: 0; }
+      0%   { transform: scale(1); image-rendering: auto; filter: blur(0); opacity: 1; }
+      40%  { transform: scale(0.1); image-rendering: pixelated; filter: blur(4px); opacity: 0.8; }
+      70%  { transform: scale(0.05); opacity: 0.4; }
+      100% { transform: scale(1); filter: blur(0); opacity: 0; }
     }
   </style>
 </head>
@@ -173,7 +175,6 @@
       const container = document.getElementById('game-container');
       const overlay = document.getElementById('transition-overlay');
       container.classList.add('pixelate');
-      overlay.style.transition = 'opacity 0.6s';
       overlay.style.opacity = '1';
       container.addEventListener('animationend', () => {
         window.location.href = 'scene2.html';
@@ -222,11 +223,10 @@
             bubble.className = 'speech';
             bubble.textContent = 'Ха-ха!';
             dragon.appendChild(bubble);
-            const bundleX = dragon.getBoundingClientRect().left;
-            const bundleY = dragon.getBoundingClientRect().top;
+            const bundleRect = dragon.getBoundingClientRect();
             const containerRect = document.getElementById("game-container").getBoundingClientRect();
-            const absX = bundleX - containerRect.left;
-            const absY = bundleY - containerRect.top;
+            const absX = bundleRect.left - containerRect.left;
+            const absY = bundleRect.top - containerRect.top;
             dragonBundle.style.left = `${absX}px`;
             dragonBundle.style.top = `${absY}px`;
             dragonBundle.style.transform = 'scale(3)';
