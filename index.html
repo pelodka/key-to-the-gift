@@ -211,26 +211,34 @@
       if (!getBtn.classList.contains("enabled")) return;
       document.getElementById("game-container").classList.add("shake");
       setTimeout(() => {
+        // Calculate absolute dragon position
         dragonBundle.style.display = "block";
         dragonBundle.style.left = "30%";
         dragonBundle.style.top = "20%";
+
         setTimeout(() => {
           dragonBundle.style.left = "50%";
           dragonBundle.style.top = "30%";
           dragonBundle.style.transform = "translate(-50%, -50%) scale(3)";
+
           setTimeout(() => {
             const bubble = document.createElement('div');
             bubble.className = 'speech';
             bubble.textContent = 'Ха-ха!';
             dragon.appendChild(bubble);
+
             const bundleRect = dragon.getBoundingClientRect();
             const containerRect = document.getElementById("game-container").getBoundingClientRect();
             const absX = bundleRect.left - containerRect.left;
             const absY = bundleRect.top - containerRect.top;
+
+            // Move dragon-bundle to absolute position
             dragonBundle.style.left = `${absX}px`;
             dragonBundle.style.top = `${absY}px`;
             dragonBundle.style.transform = 'scale(3)';
             dragonBundle.style.transition = 'all 2s ease-in-out';
+
+            // Keep cards at visual size and group
             gift1.style.position = 'absolute';
             gift2.style.position = 'absolute';
             gift1.style.left = '-60px';
@@ -239,11 +247,16 @@
             gift2.style.top = '70px';
             dragonBundle.appendChild(gift1);
             dragonBundle.appendChild(gift2);
+
+            // Move the entire bundle offscreen cleanly
             setTimeout(() => {
-              //alert("Dragon flew away with gifts. Transition to game scene here.");
-              startTransition();
-            }, 2000);
-          }, 1500);
+              dragonBundle.style.left = '120%';
+              dragonBundle.style.top = '10%';
+              setTimeout(() => {
+                startTransition();
+              }, 1000);
+            }, 1500);
+          }, 1000);
         }, 1000);
       }, 500);
     });
