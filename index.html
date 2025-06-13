@@ -79,10 +79,12 @@
       transition: transform 2s ease-in-out, left 2s ease-in-out, top 2s ease-in-out;
     }
     .dragon {
-      width: 8vw;
-      height: auto;
-      background: url('dragon.png') center center / contain no-repeat;
+      width: 10vw; max-width: 128px;
+      height: 5vw; max-height: 64px;   /* maintain 2:1 aspect ratio */
       image-rendering: pixelated;
+      background: url('dragon.png') center center no-repeat;
+      background-size: contain;
+      position: absolute;
     }
     .speech {
       position: absolute;
