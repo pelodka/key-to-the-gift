@@ -15,22 +15,23 @@
     }
 
     #game-container {
-      width: 100vw;
-      height: 100vh;
+      width: 1280px;
+      height: 720px;
+      margin: 0 auto;
       background: url('background.png') center center no-repeat;
       background-size: contain;
       position: relative;
     }
 
     #player {
-      width: 320px; /* scaled down */
+      width: 320px;
       height: 320px;
       background: url('player_idle.png') no-repeat center center;
       background-size: contain;
       image-rendering: pixelated;
       position: absolute;
       left: 0;
-      bottom: 160px; /* lowered to touch green */
+      bottom: 100x;
       transform-origin: left bottom;
     }
 
@@ -58,13 +59,14 @@
     const player = document.getElementById('player');
     const tileSize = 32;
     const playerWidth = 320;
-    const backgroundWidth = document.getElementById('game-container').clientWidth;
+    const gameContainer = document.getElementById('game-container');
+    const backgroundWidth = gameContainer.clientWidth;
     let posX = Math.floor(backgroundWidth / 2 / tileSize) * tileSize;
     let posY = 0;
     let isJumping = false;
     let jumpSpeed = 0;
     const gravity = 0.8;
-    const groundY = 160;
+    const groundY = 100;
 
     function updatePlayerPosition() {
       player.style.left = posX + 'px';
@@ -81,19 +83,29 @@
     });
 
     function gameLoop() {
+      const maxX = backgroundWidth - playerWidth;
+
       if (keysHeld['arrowleft'] || keysHeld['a']) {
-        posX = Math.max(posX - 4, 0);
+        posX -= 4;
+        if (posX <= 0 && !alertTriggered) {
+          posX = 0;
+          alert("Transition to wizard here.");
+          alertTriggered = true;
+        }
         player.classList.add('flipped');
       }
+
       if (keysHeld['arrowright'] || keysHeld['d']) {
-        posX = Math.min(posX + 4, backgroundWidth - playerWidth);
+        posX += 4;
+        if (posX >= maxX && !alertTriggered) {
+          posX = maxX;
+          alert("Transition to wizard here.");
+          alertTriggered = true;
+        }
         player.classList.remove('flipped');
       }
 
-      if ((posX <= 0 || posX + playerWidth >= backgroundWidth) && !alertTriggered) {
-        alert("Transition to wizard here.");
-        alertTriggered = true;
-      }
+      posX = Math.max(0, Math.min(posX, maxX));
 
       if (isJumping) {
         posY += jumpSpeed;
