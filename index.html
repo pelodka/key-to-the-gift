@@ -112,26 +112,22 @@
 </head>
 <body>
   <div id="game-container">
-    <!-- Initial GO Button -->
     <div id="start-screen" class="centered">
       <button id="go-btn">GO</button>
     </div>
 
-    <!-- Loading Screen -->
     <div id="loading-screen" class="centered" style="display:none">
       <p>LOADING...</p>
     </div>
 
-    <!-- Gift Interaction Screen -->
     <div id="gift-section">
-      <div>
+      <div id="gift-cards">
         <img class="gift-card" id="gift1" src="gift_card_1.png" alt="Gift Card 1">
         <img class="gift-card" id="gift2" src="gift_card_2.png" alt="Gift Card 2">
       </div>
       <button id="get-presents"></button>
     </div>
 
-    <!-- Flying Dragon Placeholder -->
     <div class="dragon" id="dragon"></div>
   </div>
 
@@ -140,6 +136,7 @@
     const startScreen = document.getElementById("start-screen");
     const loadingScreen = document.getElementById("loading-screen");
     const giftSection = document.getElementById("gift-section");
+    const giftCardsDiv = document.getElementById("gift-cards");
     const gift1 = document.getElementById("gift1");
     const gift2 = document.getElementById("gift2");
     const getBtn = document.getElementById("get-presents");
@@ -181,7 +178,6 @@
 
       container.classList.add("shake");
 
-      // Step 1: Show dragon
       setTimeout(() => {
         dragon.style.display = "block";
         dragon.style.left = "30%";
@@ -189,33 +185,32 @@
         dragon.style.width = "128px";
         dragon.style.height = "64px";
 
-        // Step 2: Move toward center and grow
         setTimeout(() => {
           dragon.style.left = "50%";
           dragon.style.top = "30%";
           dragon.style.transform = "translate(-50%, -50%) scale(3)";
 
-          // Step 3: Attach cards to dragon and show speech
           setTimeout(() => {
+            // Move gift cards into dragon and re-parent them
             gift1.style.position = 'absolute';
             gift2.style.position = 'absolute';
-            gift1.style.left = 'calc(50% - 100px)';
-            gift2.style.left = 'calc(50% + 60px)';
-            gift1.style.top = '30%';
-            gift2.style.top = '30%';
+            gift1.style.left = '20px';
+            gift2.style.left = '80px';
+            gift1.style.top = '30px';
+            gift2.style.top = '30px';
             gift1.style.transform = 'scale(0.5)';
             gift2.style.transform = 'scale(0.5)';
+            dragon.appendChild(gift1);
+            dragon.appendChild(gift2);
 
             const bubble = document.createElement('div');
             bubble.className = 'speech';
             bubble.textContent = 'Ха-ха!';
             dragon.appendChild(bubble);
 
-            // Step 4: Fly away
             setTimeout(() => {
               dragon.style.left = '120%';
               dragon.style.top = '10%';
-
               setTimeout(() => {
                 alert("Dragon flew away with gifts. Transition to game scene here.");
               }, 2000);
