@@ -4,9 +4,226 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Key to the Gift</title>
-  <!-- full content omitted for brevity in this message -->
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: black;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    #game-container {
+      width: 100vw;
+      height: 100vh;
+      background: url('background.png') center center no-repeat;
+      background-size: contain;
+      position: relative;
+    }
+
+    .centered {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    .gift-card {
+      width: 192px;
+      height: 288px;
+      margin: 30px;
+      display: inline-block;
+      border: 2px solid white;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .gift-card.selected {
+      border: 6px dashed yellow;
+    }
+
+    #gift-section {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    #get-presents {
+      margin-top: 30px;
+      pointer-events: none;
+      opacity: 0.5;
+      width: 600px;
+      height: 192px;
+      background: url('button01.png') no-repeat center center;
+      background-size: contain;
+      border: none;
+      cursor: pointer;
+    }
+
+    #get-presents.enabled {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .shake {
+      animation: shake 0.5s;
+    }
+
+    @keyframes shake {
+      0% { transform: translate(2px, 2px); }
+      25% { transform: translate(-2px, -2px); }
+      50% { transform: translate(2px, -2px); }
+      75% { transform: translate(-2px, 2px); }
+      100% { transform: translate(0, 0); }
+    }
+
+    .dragon {
+      position: absolute;
+      top: 100px;
+      left: -200px;
+      width: 64px;
+      height: 32px;
+      background: url('dragon.png') no-repeat center center;
+      background-size: contain;
+      display: none;
+      transition: all 2s ease-in-out;
+    }
+
+    .speech {
+      position: absolute;
+      background-color: white;
+      color: black;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: bold;
+      top: -40px;
+      left: 50%;
+      transform: translateX(-50%);
+      white-space: nowrap;
+    }
+  </style>
 </head>
 <body>
-  <!-- full HTML already saved -->
+  <div id="game-container">
+    <!-- Initial GO Button -->
+    <div id="start-screen" class="centered">
+      <button id="go-btn">GO</button>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="centered" style="display:none">
+      <p>LOADING...</p>
+    </div>
+
+    <!-- Gift Interaction Screen -->
+    <div id="gift-section">
+      <div>
+        <img class="gift-card" id="gift1" src="gift_card_1.png" alt="Gift Card 1">
+        <img class="gift-card" id="gift2" src="gift_card_2.png" alt="Gift Card 2">
+      </div>
+      <button id="get-presents"></button>
+    </div>
+
+    <!-- Flying Dragon Placeholder -->
+    <div class="dragon" id="dragon"></div>
+  </div>
+
+  <script>
+    const goBtn = document.getElementById("go-btn");
+    const startScreen = document.getElementById("start-screen");
+    const loadingScreen = document.getElementById("loading-screen");
+    const giftSection = document.getElementById("gift-section");
+    const gift1 = document.getElementById("gift1");
+    const gift2 = document.getElementById("gift2");
+    const getBtn = document.getElementById("get-presents");
+    const dragon = document.getElementById("dragon");
+    const container = document.getElementById("game-container");
+
+    let selectedGifts = new Set();
+
+    goBtn.addEventListener("click", () => {
+      startScreen.style.display = "none";
+      loadingScreen.style.display = "block";
+      setTimeout(() => {
+        loadingScreen.style.display = "none";
+        giftSection.style.display = "block";
+      }, 2000);
+    });
+
+    function toggleGift(card) {
+      const id = card.id;
+      if (selectedGifts.has(id)) {
+        selectedGifts.delete(id);
+        card.classList.remove("selected");
+      } else {
+        selectedGifts.add(id);
+        card.classList.add("selected");
+      }
+      if (selectedGifts.size === 2) {
+        getBtn.classList.add("enabled");
+      } else {
+        getBtn.classList.remove("enabled");
+      }
+    }
+
+    gift1.addEventListener("click", () => toggleGift(gift1));
+    gift2.addEventListener("click", () => toggleGift(gift2));
+
+    getBtn.addEventListener("click", () => {
+      if (!getBtn.classList.contains("enabled")) return;
+
+      container.classList.add("shake");
+
+      // Step 1: Show dragon
+      setTimeout(() => {
+        dragon.style.display = "block";
+        dragon.style.left = "30%";
+        dragon.style.top = "20%";
+        dragon.style.width = "128px";
+        dragon.style.height = "64px";
+
+        // Step 2: Move toward center and grow
+        setTimeout(() => {
+          dragon.style.left = "50%";
+          dragon.style.top = "30%";
+          dragon.style.transform = "translate(-50%, -50%) scale(3)";
+
+          // Step 3: Attach cards to dragon and show speech
+          setTimeout(() => {
+            gift1.style.position = 'absolute';
+            gift2.style.position = 'absolute';
+            gift1.style.left = 'calc(50% - 100px)';
+            gift2.style.left = 'calc(50% + 60px)';
+            gift1.style.top = '30%';
+            gift2.style.top = '30%';
+            gift1.style.transform = 'scale(0.5)';
+            gift2.style.transform = 'scale(0.5)';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'speech';
+            bubble.textContent = 'Ха-ха!';
+            dragon.appendChild(bubble);
+
+            // Step 4: Fly away
+            setTimeout(() => {
+              dragon.style.left = '120%';
+              dragon.style.top = '10%';
+
+              setTimeout(() => {
+                alert("Dragon flew away with gifts. Transition to game scene here.");
+              }, 2000);
+            }, 1500);
+          }, 2000);
+        }, 1000);
+      }, 500);
+    });
+  </script>
 </body>
 </html>
