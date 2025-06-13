@@ -2,69 +2,59 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Key to the Gift</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Key to the Gift - Responsive</title>
   <style>
-    /* reset & base */
     html, body {
-      margin: 0; padding: 0;
-      width: 100%; height: 100%;
-      overflow: hidden; background: black;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: black;
       font-family: 'Courier New', monospace;
     }
-    /* full-screen responsive background */
     #game-container {
       position: relative;
-      width: 100%; height: 100%;
-      background: url('background.png') center center no-repeat;
-      background-size: cover;
+      width: 100%;
+      height: 100%;
+      background: url('background.png') center center / cover no-repeat;
     }
-    /* center-anything helper */
     .centered {
       position: absolute;
-      top: 50%; left: 50%;
+      top: 50%;
+      left: 50%;
       transform: translate(-50%, -50%);
       text-align: center;
     }
-
-    /* START button */
-    #start-screen button {
-      font-size: 4vw;
-      padding: 1vw 2vw;
-      cursor: pointer;
-    }
-
-    /* LOADING */
-    #loading-screen p {
-      font-size: 3vw; color: white;
-    }
-
-    /* GIFTS */
-    #gift-section {
-      display: none;
-    }
-    #gift-cards {
-      display: flex; justify-content: center; gap: 2vw;
-    }
     .gift-card {
       width: 15vw;
-      max-width: 200px;
-      image-rendering: pixelated;
+      height: auto;
+      margin: 1vw;
+      border: 0.3vw solid white;
       cursor: pointer;
-      border: 0.2vw solid white;
-      transition: border 0.2s;
+      transition: all 0.3s;
+      image-rendering: pixelated;
     }
     .gift-card.selected {
       border: 0.6vw dashed yellow;
+    }
+    #gift-section {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
     }
     #get-presents {
       display: block;
       margin: 2vw auto 0;
       width: 15vw; max-width: 200px;
-      height: auto;
+      height: 15vw; max-height: 200px;       /* ensure visible height */
       background: url('button01.png') center center no-repeat;
       background-size: contain;
-      border: none; cursor: pointer;
+      border: none;
+      cursor: pointer;
       opacity: 0.5;
       pointer-events: none;
     }
@@ -72,53 +62,52 @@
       opacity: 1;
       pointer-events: auto;
     }
-
-    /* DRAGON SEQUENCE */
     .shake {
       animation: shake 0.5s;
     }
     @keyframes shake {
-      0%   { transform: translate(2px,2px); }
-      25%  { transform: translate(-2px,-2px); }
-      50%  { transform: translate(2px,-2px); }
-      75%  { transform: translate(-2px,2px); }
-      100% { transform: translate(0,0); }
+      0% { transform: translate(1vw, 1vh); }
+      25% { transform: translate(-1vw, -1vh); }
+      50% { transform: translate(1vw, -1vh); }
+      75% { transform: translate(-1vw, 1vh); }
+      100% { transform: translate(0, 0); }
     }
     .dragon-bundle {
       position: absolute;
       display: none;
-      transition: all 2s ease-in-out;
+      transform-origin: center center;
+      transition: transform 2s ease-in-out, left 2s ease-in-out, top 2s ease-in-out;
     }
     .dragon {
-      width: 10vw; max-width: 128px;
+      width: 8vw;
+      height: auto;
+      background: url('dragon.png') center center / contain no-repeat;
       image-rendering: pixelated;
-      background: url('dragon.png') center center no-repeat;
-      background-size: contain;
-      position: absolute;
     }
-    /* speech bubble */
     .speech {
       position: absolute;
-      bottom: calc(100% + 1vw);
-      left: 50%; transform: translateX(-50%);
-      background: white; color: black;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%) translateY(-1vh);
+      background: white;
+      color: black;
       padding: 1vw 2vw;
-      border: 0.4vw solid red;
-      border-radius: 1vw;
-      font-size: 2.5vw;
+      border: 0.3vw solid red;
+      border-radius: 0.5vw;
+      font-size: 2vw;
       font-family: 'Arial Black', sans-serif;
-      text-transform: uppercase;
-      letter-spacing: 0.2vw;
-      max-width: 60vw;
+      letter-spacing: 0.1vw;
       text-align: center;
-      image-rendering: auto;
+      white-space: normal;
+      max-width: 25vw;
+      image-rendering: pixelated;
     }
-
-    /* pixelated transition */
     #transition-overlay {
-      position: absolute; top: 0; left: 0;
+      position: absolute;
+      top: 0; left: 0;
       width: 100%; height: 100%;
-      background: black; opacity: 0;
+      background: black;
+      opacity: 0;
       pointer-events: none;
       transition: opacity 1s ease-in-out;
     }
@@ -126,10 +115,9 @@
       animation: pixelateOut 1s ease-in-out forwards;
     }
     @keyframes pixelateOut {
-      0%   { filter: blur(0); transform: scale(1); }
-      40%  { filter: blur(4px); transform: scale(0.1); image-rendering: pixelated; }
-      70%  { opacity: 0.4; }
-      100% { filter: blur(0); transform: scale(1); opacity: 0; }
+      0%   { transform: scale(1); filter: blur(0); opacity: 1; }
+      50%  { transform: scale(0.1); filter: blur(5px); opacity: 0.8; }
+      100% { transform: scale(1); filter: blur(0); opacity: 0; }
     }
   </style>
 </head>
@@ -141,107 +129,87 @@
     <div id="loading-screen" class="centered" style="display:none">
       <p>LOADING...</p>
     </div>
-    <div id="gift-section" class="centered">
-      <div id="gift-cards">
-        <img id="gift1" class="gift-card" src="gift_card_1.png" alt="">
-        <img id="gift2" class="gift-card" src="gift_card_2.png" alt="">
-      </div>
+    <div id="gift-section">
+      <img class="gift-card" id="gift1" src="gift_card_1.png" alt="Gift 1">
+      <img class="gift-card" id="gift2" src="gift_card_2.png" alt="Gift 2">
       <button id="get-presents"></button>
     </div>
     <div id="dragon-bundle" class="dragon-bundle">
-      <div id="dragon" class="dragon"></div>
+      <div class="dragon" id="dragon"></div>
     </div>
   </div>
   <div id="transition-overlay"></div>
-
   <script>
-    const goBtn   = document.getElementById('go-btn');
-    const startS  = document.getElementById('start-screen');
-    const loadS   = document.getElementById('loading-screen');
-    const giftS   = document.getElementById('gift-section');
-    const gift1   = document.getElementById('gift1');
-    const gift2   = document.getElementById('gift2');
-    const getBtn  = document.getElementById('get-presents');
-    const gameC   = document.getElementById('game-container');
-    const dragonB = document.getElementById('dragon-bundle');
-    const dragon  = document.getElementById('dragon');
+    const container = document.getElementById('game-container');
+    const goBtn = document.getElementById('go-btn');
+    const startScreen = document.getElementById('start-screen');
+    const loadingScreen = document.getElementById('loading-screen');
+    const giftSection = document.getElementById('gift-section');
+    const gift1 = document.getElementById('gift1');
+    const gift2 = document.getElementById('gift2');
+    const getBtn = document.getElementById('get-presents');
+    const dragonBundle = document.getElementById('dragon-bundle');
+    const dragon = document.getElementById('dragon');
 
     function startTransition() {
-      gameC.classList.add('pixelate');
+      container.classList.add('pixelate');
       document.getElementById('transition-overlay').style.opacity = '1';
-      gameC.addEventListener('animationend', () => {
+      container.addEventListener('animationend', () => {
         window.location.href = 'scene2.html';
       }, { once: true });
     }
 
-    // GO → loading → gifts
+    // Start
     goBtn.addEventListener('click', () => {
-      startS.style.display = 'none';
-      loadS.style.display  = 'block';
+      startScreen.style.display = 'none';
+      loadingScreen.style.display = 'block';
       setTimeout(() => {
-        loadS.style.display = 'none';
-        giftS.style.display = 'block';
+        loadingScreen.style.display = 'none';
+        giftSection.style.display = 'block';
       }, 2000);
     });
 
-    // gift selection
     let selected = new Set();
-    function toggleGift(img) {
-      if (selected.has(img.id)) {
-        selected.delete(img.id);
-        img.classList.remove('selected');
+    function toggle(e) {
+      const id = e.id;
+      if (selected.has(id)) {
+        selected.delete(id);
+        e.classList.remove('selected');
       } else {
-        selected.add(img.id);
-        img.classList.add('selected');
+        selected.add(id);
+        e.classList.add('selected');
       }
       getBtn.classList.toggle('enabled', selected.size === 2);
     }
-    gift1.addEventListener('click', () => toggleGift(gift1));
-    gift2.addEventListener('click', () => toggleGift(gift2));
+    gift1.onclick = () => toggle(gift1);
+    gift2.onclick = () => toggle(gift2);
 
-    // dragon sequence
     getBtn.addEventListener('click', () => {
       if (!getBtn.classList.contains('enabled')) return;
-      gameC.classList.add('shake');
+      container.classList.add('shake');
       setTimeout(() => {
-        dragonB.style.display = 'block';
-        dragonB.style.left    = '30%';
-        dragonB.style.top     = '20%';
+        dragonBundle.style.display = 'block';
+        dragonBundle.style.left = '30%';
+        dragonBundle.style.top = '20%';
         setTimeout(() => {
-          dragonB.style.left      = '50%';
-          dragonB.style.top       = '30%';
-          dragonB.style.transform = 'translate(-50%,-50%) scale(3)';
+          dragonBundle.style.transform = 'translate(-50%, -50%) scale(3)';
+          const bubble = document.createElement('div');
+          bubble.className = 'speech';
+          bubble.textContent = 'ХА-ХА!';
+          dragon.appendChild(bubble);
+          gift1.style.position = gift2.style.position = 'absolute';
+          gift1.style.left = '-4vw';
+          gift2.style.left = '6vw';
+          gift1.style.top = gift2.style.top = '4vw';
+          dragonBundle.appendChild(gift1);
+          dragonBundle.appendChild(gift2);
           setTimeout(() => {
-            const bubble = document.createElement('div');
-            bubble.className = 'speech';
-            bubble.textContent = 'ХА-ХА!';
-            dragon.appendChild(bubble);
-
-            // group gifts onto dragon
-            [gift1,gift2].forEach((g,i) => {
-              g.style.position = 'absolute';
-              g.style.top      = '70px';
-              g.style.left     = (i===0 ? '-60px' : '120px');
-              dragonB.appendChild(g);
-            });
-
-            setTimeout(() => {
-              dragonB.style.left = '120%';
-              dragonB.style.top  = '10%';
-              setTimeout(startTransition, 1000);
-            }, 1500);
-
-          }, 1000);
+            dragonBundle.style.left = '120%';
+            dragonBundle.style.top = '10%';
+            setTimeout(startTransition, 1000);
+          }, 1500);
         }, 1000);
       }, 500);
-    });
-
-    // ---------- TOUCH SUPPORT ----------
-    [goBtn, gift1, gift2, getBtn].forEach(btn => {
-      btn.addEventListener('touchstart', e => {
-        e.preventDefault();
-        btn.click();
-      }, { passive: false });
     });
   </script>
 </body>
