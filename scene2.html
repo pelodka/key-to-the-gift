@@ -30,7 +30,7 @@
       image-rendering: pixelated;
       position: absolute;
       left: 0;
-      bottom: 220px; /* adjusted to stand on green */
+      bottom: 160px; /* lowered to touch green */
       transform-origin: left bottom;
     }
 
@@ -58,39 +58,43 @@
     const player = document.getElementById('player');
     const tileSize = 32;
     const playerWidth = 320;
-    let posX = Math.floor(window.innerWidth / 2 / tileSize) * tileSize;
+    const backgroundWidth = document.getElementById('game-container').clientWidth;
+    let posX = Math.floor(backgroundWidth / 2 / tileSize) * tileSize;
     let posY = 0;
     let isJumping = false;
     let jumpSpeed = 0;
     const gravity = 0.8;
-    const groundY = 220;
+    const groundY = 160;
 
     function updatePlayerPosition() {
       player.style.left = posX + 'px';
     }
 
+    let keysHeld = {};
+
     document.addEventListener('keydown', (e) => {
-      if (e.repeat) return;
+      keysHeld[e.key.toLowerCase()] = true;
+    });
 
-      if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
-        posX = Math.max(posX - tileSize, 0);
-        player.classList.add('flipped');
-      } else if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') {
-        posX = Math.min(posX + tileSize, window.innerWidth - playerWidth);
-        player.classList.remove('flipped');
-      } else if (e.key === ' ' && !isJumping) {
-        isJumping = true;
-        jumpSpeed = 15;
-      }
-
-      if (posX <= 0 || posX + playerWidth >= window.innerWidth) {
-        alert("Transition to wizard here.");
-      }
-
-      updatePlayerPosition();
+    document.addEventListener('keyup', (e) => {
+      keysHeld[e.key.toLowerCase()] = false;
     });
 
     function gameLoop() {
+      if (keysHeld['arrowleft'] || keysHeld['a']) {
+        posX = Math.max(posX - 4, 0);
+        player.classList.add('flipped');
+      }
+      if (keysHeld['arrowright'] || keysHeld['d']) {
+        posX = Math.min(posX + 4, backgroundWidth - playerWidth);
+        player.classList.remove('flipped');
+      }
+
+      if ((posX <= 0 || posX + playerWidth >= backgroundWidth) && !alertTriggered) {
+        alert("Transition to wizard here.");
+        alertTriggered = true;
+      }
+
       if (isJumping) {
         posY += jumpSpeed;
         jumpSpeed -= gravity;
@@ -100,9 +104,12 @@
         }
         player.style.bottom = (groundY + posY) + 'px';
       }
+
+      updatePlayerPosition();
       requestAnimationFrame(gameLoop);
     }
 
+    let alertTriggered = false;
     updatePlayerPosition();
     gameLoop();
   </script>
