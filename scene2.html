@@ -63,11 +63,11 @@
     const player = document.getElementById('player');
     const container = document.getElementById('game-container');
     const playerWidth = 320;
-    const backgroundWidth = container.clientHeight * (9 / 16); // based on 16:9 aspect
-    const leftLimit = (container.clientWidth - backgroundWidth) / 2;
-    const rightLimit = container.clientWidth - leftLimit - playerWidth;
-    const maxX = rightLimit;
-    let posX = leftLimit + (backgroundWidth - playerWidth) / 2;
+    const backgroundWidth = 1080; // fixed width of your background image
+const leftLimit = (container.clientWidth - backgroundWidth) / 2;
+const rightLimit = container.clientWidth - leftLimit - playerWidth;
+const maxX = rightLimit;
+let posX = leftLimit + (backgroundWidth - playerWidth) / 2;
     let posY = 0;
     let isJumping = false;
     let jumpSpeed = 0;
