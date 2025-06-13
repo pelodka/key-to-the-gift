@@ -24,14 +24,14 @@
     }
 
     #player {
-      width: 320px;
+      width: 320px;    /* 10x scale */
       height: 320px;
       background: url('player_idle.png') no-repeat center center;
       background-size: contain;
       image-rendering: pixelated;
       position: absolute;
       left: 0;
-      bottom: 100x;
+      bottom: 100px;   /* <-- DEFAULT VERTICAL POSITION in CSS: this should match groundY in JS. Decrease this value to move the player DOWN, increase to move UP. */   /* <-- DEFAULT VERTICAL POSITION in CSS: this should match groundY in JS. Decrease this value to move the player DOWN, increase to move UP. */
       transform-origin: left bottom;
     }
 
@@ -61,18 +61,24 @@
     const playerWidth = 320;
     const gameContainer = document.getElementById('game-container');
     const backgroundWidth = gameContainer.clientWidth;
+
+    // INITIAL POSITIONS
     let posX = Math.floor(backgroundWidth / 2 / tileSize) * tileSize;
-    let posY = 0;
+    let posY = 0;            // Vertical offset above ground (jump height)
     let isJumping = false;
     let jumpSpeed = 0;
     const gravity = 0.8;
-    const groundY = 100;
+
+    // groundY determines the player's base bottom offset (in CSS and JS)
+    // Increasing groundY moves the player UP; decreasing moves DOWN.
+    const groundY = 100;     /* <-- DEFAULT GROUND ALIGNMENT in JS: this should match the CSS bottom value above. Decrease to lower the player, increase to raise the player. */     /* <-- DEFAULT GROUND ALIGNMENT in JS: this should match the CSS bottom value above. Decrease to lower the player, increase to raise the player. */ <-- DEFAULT GROUND ALIGNMENT: match this to CSS bottom */
 
     function updatePlayerPosition() {
       player.style.left = posX + 'px';
     }
 
     let keysHeld = {};
+    let alertTriggered = false;
 
     document.addEventListener('keydown', (e) => {
       keysHeld[e.key.toLowerCase()] = true;
@@ -86,26 +92,21 @@
       const maxX = backgroundWidth - playerWidth;
 
       if (keysHeld['arrowleft'] || keysHeld['a']) {
-        posX -= 4;
-        if (posX <= 0 && !alertTriggered) {
-          posX = 0;
-          alert("Transition to wizard here.");
-          alertTriggered = true;
-        }
+        posX = Math.max(posX - 4, 0);
         player.classList.add('flipped');
-      }
-
-      if (keysHeld['arrowright'] || keysHeld['d']) {
-        posX += 4;
-        if (posX >= maxX && !alertTriggered) {
-          posX = maxX;
+        if (posX === 0 && !alertTriggered) {
           alert("Transition to wizard here.");
           alertTriggered = true;
         }
-        player.classList.remove('flipped');
       }
-
-      posX = Math.max(0, Math.min(posX, maxX));
+      if (keysHeld['arrowright'] || keysHeld['d']) {
+        posX = Math.min(posX + 4, maxX);
+        player.classList.remove('flipped');
+        if (posX === maxX && !alertTriggered) {
+          alert("Transition to wizard here.");
+          alertTriggered = true;
+        }
+      }
 
       if (isJumping) {
         posY += jumpSpeed;
@@ -114,6 +115,7 @@
           posY = 0;
           isJumping = false;
         }
+        // Set vertical position during jump
         player.style.bottom = (groundY + posY) + 'px';
       }
 
@@ -121,7 +123,7 @@
       requestAnimationFrame(gameLoop);
     }
 
-    let alertTriggered = false;
+    // Start the game loop
     updatePlayerPosition();
     gameLoop();
   </script>
