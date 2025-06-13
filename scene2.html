@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,45 +6,30 @@
   <title>Playable Scene</title>
   <style>
     html, body {
-      margin: 0;
-      padding: 0;
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden;
-      background-color: black;
+      margin: 0; padding: 0;
+      width: 100vw; height: 100vh;
+      overflow: hidden; background-color: black;
     }
 
     #game-container {
-      width: 100vw;
-      height: 100vh;
+      width: 100vw; height: 100vh;
       background: url('background.png') center center no-repeat;
-      background-size: contain;
-      position: relative;
+      background-size: contain; position: relative;
     }
 
     #player {
-      width: 320px; /* scaled down */
-      height: 320px;
+      width: 320px; height: 320px;
       background: url('player_idle.png') no-repeat center center;
-      background-size: contain;
-      image-rendering: pixelated;
-      position: absolute;
-      left: 0;
-      bottom: 220px; /* adjusted to stand on green */
+      background-size: contain; image-rendering: pixelated;
+      position: absolute; left: 0;
+      bottom: 160px; /* lowered 60px from 220 to 160 */
       transform-origin: left bottom;
     }
-
-    #player.flipped {
-      transform: scaleX(-1);
-    }
+    #player.flipped { transform: scaleX(-1); }
 
     #ground {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 100px;
-      background: transparent;
+      position: absolute; bottom: 0; left: 0;
+      width: 100%; height: 100px; background: transparent;
     }
   </style>
 </head>
@@ -57,53 +41,61 @@
 
   <script>
     const player = document.getElementById('player');
+    const container = document.getElementById('game-container');
     const tileSize = 32;
     const playerWidth = 320;
-    let posX = Math.floor(window.innerWidth / 2 / tileSize) * tileSize;
+    const maxX = container.clientWidth - playerWidth;
+    let posX = (container.clientWidth / 2) - (playerWidth / 2);
     let posY = 0;
     let isJumping = false;
     let jumpSpeed = 0;
     const gravity = 0.8;
-    const groundY = 220;
+    const groundY = 160;
+    let keysHeld = {};
+    let alertTriggered = false;
 
     function updatePlayerPosition() {
       player.style.left = posX + 'px';
+      player.style.bottom = (groundY + posY) + 'px';
     }
 
-    document.addEventListener('keydown', (e) => {
-      if (e.repeat) return;
-
-      if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
-        posX = Math.max(posX - tileSize, 0);
-        player.classList.add('flipped');
-      } else if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') {
-        posX = Math.min(posX + tileSize, window.innerWidth - playerWidth);
-        player.classList.remove('flipped');
-      } else if (e.key === ' ' && !isJumping) {
-        isJumping = true;
-        jumpSpeed = 15;
-      }
-
-      if (posX <= 0 || posX + playerWidth >= window.innerWidth) {
-        alert("Transition to wizard here.");
-      }
-
-      updatePlayerPosition();
+    document.addEventListener('keydown', e => {
+      keysHeld[e.key.toLowerCase()] = true;
+    });
+    document.addEventListener('keyup', e => {
+      keysHeld[e.key.toLowerCase()] = false;
     });
 
     function gameLoop() {
-      if (isJumping) {
-        posY += jumpSpeed;
-        jumpSpeed -= gravity;
-        if (posY <= 0) {
-          posY = 0;
-          isJumping = false;
-        }
-        player.style.bottom = (groundY + posY) + 'px';
+      // Horizontal movement
+      if (keysHeld['arrowleft'] || keysHeld['a']) {
+        posX -= 4; player.classList.add('flipped');
       }
+      if (keysHeld['arrowright'] || keysHeld['d']) {
+        posX += 4; player.classList.remove('flipped');
+      }
+      // Clamp within background
+      if (posX <= 0 && !alertTriggered) {
+        posX = 0; alert('Transition to wizard here.'); alertTriggered = true;
+      } else if (posX >= maxX && !alertTriggered) {
+        posX = maxX; alert('Transition to wizard here.'); alertTriggered = true;
+      }
+      posX = Math.max(0, Math.min(posX, maxX));
+
+      // Jumping
+      if (keysHeld[' '] && !isJumping) {
+        isJumping = true; jumpSpeed = 15;
+      }
+      if (isJumping) {
+        posY += jumpSpeed; jumpSpeed -= gravity;
+        if (posY <= 0) { posY = 0; isJumping = false; }
+      }
+
+      updatePlayerPosition();
       requestAnimationFrame(gameLoop);
     }
 
+    // Initialize position and start loop
     updatePlayerPosition();
     gameLoop();
   </script>
