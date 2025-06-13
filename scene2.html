@@ -22,7 +22,7 @@
       background: url('player_idle.png') no-repeat center center;
       background-size: contain; image-rendering: pixelated;
       position: absolute; left: 0;
-      bottom: 160px; /* lowered 60px from 220 to 160 */
+      bottom: 100px;  /* Default vertical position, 60px lower */
       transform-origin: left bottom;
     }
     #player.flipped { transform: scaleX(-1); }
@@ -42,7 +42,6 @@
   <script>
     const player = document.getElementById('player');
     const container = document.getElementById('game-container');
-    const tileSize = 32;
     const playerWidth = 320;
     const maxX = container.clientWidth - playerWidth;
     let posX = (container.clientWidth / 2) - (playerWidth / 2);
@@ -50,7 +49,7 @@
     let isJumping = false;
     let jumpSpeed = 0;
     const gravity = 0.8;
-    const groundY = 160;
+    const groundY = 100;  // Must match CSS bottom for baseline
     let keysHeld = {};
     let alertTriggered = false;
 
@@ -67,23 +66,20 @@
     });
 
     function gameLoop() {
-      // Horizontal movement
+      // Smooth movement without initial teleport
       if (keysHeld['arrowleft'] || keysHeld['a']) {
-        posX -= 4; player.classList.add('flipped');
+        posX = Math.max(0, posX - 4);
+        player.classList.add('flipped');
+        if (posX === 0 && !alertTriggered) { alert('Transition to wizard here.'); alertTriggered = true; }
       }
       if (keysHeld['arrowright'] || keysHeld['d']) {
-        posX += 4; player.classList.remove('flipped');
+        posX = Math.min(maxX, posX + 4);
+        player.classList.remove('flipped');
+        if (posX === maxX && !alertTriggered) { alert('Transition to wizard here.'); alertTriggered = true; }
       }
-      // Clamp within background
-      if (posX <= 0 && !alertTriggered) {
-        posX = 0; alert('Transition to wizard here.'); alertTriggered = true;
-      } else if (posX >= maxX && !alertTriggered) {
-        posX = maxX; alert('Transition to wizard here.'); alertTriggered = true;
-      }
-      posX = Math.max(0, Math.min(posX, maxX));
 
-      // Jumping
-      if (keysHeld[' '] && !isJumping) {
+      // Jump logic
+      if ((keysHeld[' '] || keysHeld['spacebar']) && !isJumping) {
         isJumping = true; jumpSpeed = 15;
       }
       if (isJumping) {
@@ -95,7 +91,7 @@
       requestAnimationFrame(gameLoop);
     }
 
-    // Initialize position and start loop
+    // Initialize and start loop
     updatePlayerPosition();
     gameLoop();
   </script>
