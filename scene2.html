@@ -1,41 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Playable Scene</title>
   <style>
     html, body {
-      margin: 0; padding: 0;
-      width: 100vw; height: 100vh;
-      overflow: hidden; background-color: black;
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background-color: black;
     }
 
     #game-container {
-      width: 100vw; height: 100vh;
+      width: 100vw;
+      height: 100vh;
       background: url('background.png') center center no-repeat;
-      background-size: contain; position: relative;
+      background-size: contain;
+      position: relative;
     }
 
     #player {
-      width: 320px; height: 320px;
+      width: 320px;
+      height: 320px;
       background: url('player_idle.png') no-repeat center center;
-      background-size: contain; image-rendering: pixelated;
-      position: absolute; left: 0;
-      bottom: 80px;  /* Default vertical position, lowered 10px */  /* Default vertical position, 70px lower (60+10px) */  /* Default vertical position, 60px lower */
-      transform-origin: center bottom;  /* pivot from center to avoid shift when flipping */
+      background-size: contain;
+      image-rendering: pixelated;
+      position: absolute;
+      left: 0;
+      bottom: 80px; /* Adjusted to stand on green */
+      transform-origin: center bottom;
     }
-    #player.flipped { transform: scaleX(-1); }
+
+    #player.flipped {
+      transform: scaleX(-1);
+    }
 
     #ground {
-      position: absolute; bottom: 0; left: 0;
-      width: 100%; height: 100px; background: transparent;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 100px;
+      background: transparent;
     }
 
-    /* Speech bubble styling */
     .speech {
       position: absolute;
-      bottom: calc(100% + 10px);    /* place bubble above player */
+      bottom: calc(100% + 10px);
       left: 50%;
       transform: translateX(-50%);
       background-color: white;
@@ -43,16 +57,16 @@
       padding: 12px 16px;
       border: 4px solid red;
       border-radius: 4px;
-      font-size: 20px;              /* smaller font */
+      font-size: 20px;
       font-family: 'Arial Black', sans-serif;
       text-transform: uppercase;
-      /* Stretch horizontally */
+      letter-spacing: 2px;
+      white-space: normal;
       width: 60%;
       max-width: 600px;
-      white-space: normal;
       text-align: center;
     }
-</style>
+  </style>
 </head>
 <body>
   <div id="game-container">
@@ -64,24 +78,18 @@
     const player = document.getElementById('player');
     const container = document.getElementById('game-container');
     const playerWidth = 320;
-    // Determine actual background display size for contain
-    const bgSize = getComputedStyle(container).backgroundSize.split(' ');
-    const bgWidth = parseFloat(bgSize[0]);
-    const bgHeight = parseFloat(bgSize[1]);
-    // Calculate horizontal bounds based on centered background
-    const minX = (container.clientWidth - bgWidth) / 2;
-    const maxX = minX + bgWidth - playerWidth;
-    // Initial positions
-    let posX = minX + (bgWidth - playerWidth) / 2;
+    const maxX = container.clientWidth - playerWidth;
+    let posX = (container.clientWidth - playerWidth) / 2;
     let posY = 0;
     let isJumping = false;
     let jumpSpeed = 0;
     const gravity = 0.8;
-    const groundY = 80;  // Must match CSS bottom for baseline
+    const groundY = 80;
     let keysHeld = {};
     let alertTriggered = false;
     let canMove = false;
-    // Initial speech
+
+    // Add speech bubble
     const bubble = document.createElement('div');
     bubble.className = 'speech';
     bubble.textContent = 'НУ И ГДЕ МОИ ПОДАРКИ?! КУДА ТЕПЕРЬ ИДТИ - НАЛЕВО ИЛИ НАПРАВО?';
@@ -89,9 +97,21 @@
 
     document.addEventListener('keydown', e => {
       keysHeld[e.key.toLowerCase()] = true;
+      if (!canMove) {
+        canMove = true;
+        bubble.remove();
+      }
     });
+
     document.addEventListener('keyup', e => {
       keysHeld[e.key.toLowerCase()] = false;
+    });
+
+    document.addEventListener('click', () => {
+      if (!canMove) {
+        canMove = true;
+        bubble.remove();
+      }
     });
 
     function updatePlayerPosition() {
@@ -100,39 +120,44 @@
     }
 
     function gameLoop() {
-      // Dismiss speech on first directional input
-      if (!canMove && (keysHeld['arrowleft'] || keysHeld['a'] || keysHeld['arrowright'] || keysHeld['d'])) {
-        canMove = true;
-        bubble.remove();
-      }
       if (canMove) {
-        // Smooth horizontal movement
         if (keysHeld['arrowleft'] || keysHeld['a']) {
-          posX = Math.max(minX, posX - 4);
+          posX = Math.max(0, posX - 4);
           player.classList.add('flipped');
-          if (posX === minX && !alertTriggered) { alert('Transition to wizard here.'); alertTriggered = true; }
-        } else if (keysHeld['arrowright'] || keysHeld['d']) {
+          if (posX === 0 && !alertTriggered) {
+            alert('Transition to wizard here.');
+            alertTriggered = true;
+          }
+        }
+
+        if (keysHeld['arrowright'] || keysHeld['d']) {
           posX = Math.min(maxX, posX + 4);
           player.classList.remove('flipped');
-          if (posX === maxX && !alertTriggered) { alert('Transition to wizard here.'); alertTriggered = true; }
+          if (posX === maxX && !alertTriggered) {
+            alert('Transition to wizard here.');
+            alertTriggered = true;
+          }
         }
-        // Jump
+
         if ((keysHeld[' '] || keysHeld['spacebar']) && !isJumping) {
           isJumping = true;
           jumpSpeed = 15;
         }
       }
-      // Apply jump physics
+
       if (isJumping) {
         posY += jumpSpeed;
         jumpSpeed -= gravity;
-        if (posY <= 0) { posY = 0; isJumping = false; }
+        if (posY <= 0) {
+          posY = 0;
+          isJumping = false;
+        }
       }
+
       updatePlayerPosition();
       requestAnimationFrame(gameLoop);
     }
 
-    // Initialize and start loop
     updatePlayerPosition();
     gameLoop();
   </script>
