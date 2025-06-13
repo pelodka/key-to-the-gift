@@ -26,16 +26,16 @@
       width: 64px;
       height: 64px;
       background: url('player_idle.png') no-repeat center center;
+      background-size: contain;
       image-rendering: pixelated;
       position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: 100px;
+      left: 0;
+      bottom: 135px;
       transition: transform 0.1s;
     }
 
     #player.flipped {
-      transform: translateX(-50%) scaleX(-1);
+      transform: scaleX(-1);
     }
 
     #ground {
@@ -56,12 +56,13 @@
 
   <script>
     const player = document.getElementById('player');
-    let posX = window.innerWidth / 2 - 32;
+    const tileSize = 32;
+    let posX = Math.floor(window.innerWidth / 2 / tileSize) * tileSize;
     let posY = 0;
     let isJumping = false;
     let jumpSpeed = 0;
     const gravity = 0.8;
-    const groundY = 100;
+    const groundY = 135;
     let currentFrame = 0;
     const frameCount = 4;
     let animInterval;
@@ -73,6 +74,7 @@
     function startWalking() {
       clearInterval(animInterval);
       player.style.backgroundImage = "url('player_walk.png')";
+      player.style.backgroundSize = "contain";
       animInterval = setInterval(() => {
         currentFrame = (currentFrame + 1) % frameCount;
         player.style.backgroundPosition = `-${currentFrame * 64}px 0`;
@@ -84,17 +86,18 @@
       currentFrame = 0;
       player.style.backgroundImage = "url('player_idle.png')";
       player.style.backgroundPosition = '0 0';
+      player.style.backgroundSize = "contain";
     }
 
     document.addEventListener('keydown', (e) => {
       if (e.repeat) return;
       let moved = false;
       if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
-        posX -= 10;
+        posX -= tileSize;
         player.classList.add('flipped');
         moved = true;
       } else if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') {
-        posX += 10;
+        posX += tileSize;
         player.classList.remove('flipped');
         moved = true;
       } else if (e.key === ' ' && !isJumping) {
