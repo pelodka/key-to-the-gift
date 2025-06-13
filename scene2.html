@@ -52,6 +52,13 @@
     const groundY = 80;  // Must match CSS bottom for baseline (lowered by 10px)  // Must match CSS bottom for baseline (lowered 10px)  // Must match CSS bottom for baseline
     let keysHeld = {};
     let alertTriggered = false;
+    // Disable movement until speech is dismissed
+    let canMove = false;
+    // Display initial speech bubble above player
+    const bubble = document.createElement('div');
+    bubble.className = 'speech';
+    bubble.textContent = 'НУ И ГДЕ МОИ ПОДАРКИ?! КУДА ТЕПЕРЬ ИДТИ - НАЛЕВО ИЛИ НАПРАВО?';
+    player.appendChild(bubble);
 
     function updatePlayerPosition() {
       player.style.left = posX + 'px';
@@ -66,6 +73,35 @@
     });
 
     function gameLoop() {
+      // Dismiss speech on first directional input
+      if (!canMove && (keysHeld['arrowleft'] || keysHeld['a'] || keysHeld['arrowright'] || keysHeld['d'])) {
+        canMove = true;
+        bubble.remove();
+      }
+      // Movement only after speech
+      if (canMove) {
+        // Left movement
+        if (keysHeld['arrowleft'] || keysHeld['a']) {
+          posX = Math.max(0, posX - 4);
+          player.classList.add('flipped');
+          if (posX === 0 && !alertTriggered) { alert('Transition to wizard here.'); alertTriggered = true; }
+        }
+        // Right movement
+        if (keysHeld['arrowright'] || keysHeld['d']) {
+          posX = Math.min(maxX, posX + 4);
+          player.classList.remove('flipped');
+          if (posX === maxX && !alertTriggered) { alert('Transition to wizard here.'); alertTriggered = true; }
+        }
+        // Jump
+        if ((keysHeld[' '] || keysHeld['spacebar']) && !isJumping) {
+          isJumping = true; jumpSpeed = 15;
+        }
+      }
+      // Apply jump physics
+      if (isJumping) {
+        posY += jumpSpeed; jumpSpeed -= gravity;
+        if (posY <= 0) { posY = 0; isJumping = false; }
+      }
       // Smooth movement without initial teleport
       if (keysHeld['arrowleft'] || keysHeld['a']) {
         posX = Math.max(0, posX - 4);
