@@ -22,8 +22,8 @@
       background: url('player_idle.png') no-repeat center center;
       background-size: contain; image-rendering: pixelated;
       position: absolute; left: 0;
-      bottom: 90px;  /* Default vertical position, 70px lower (60+10px) */  /* Default vertical position, 60px lower */
-      transform-origin: left bottom;
+      bottom: 80px;  /* Default vertical position, lowered 10px */  /* Default vertical position, 70px lower (60+10px) */  /* Default vertical position, 60px lower */
+      transform-origin: center bottom;  /* pivot from center to avoid shift when flipping */
     }
     #player.flipped { transform: scaleX(-1); }
 
@@ -49,7 +49,7 @@
     let isJumping = false;
     let jumpSpeed = 0;
     const gravity = 0.8;
-    const groundY = 90;  // Must match CSS bottom for baseline (lowered 10px)  // Must match CSS bottom for baseline
+    const groundY = 80;  // Must match CSS bottom for baseline (lowered by 10px)  // Must match CSS bottom for baseline (lowered 10px)  // Must match CSS bottom for baseline
     let keysHeld = {};
     let alertTriggered = false;
 
