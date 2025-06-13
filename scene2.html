@@ -1,152 +1,123 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Playable Scene</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Scene2 - Responsive</title>
   <style>
+    /* Reset & base */
     html, body {
       margin: 0; padding: 0;
-      width: 100vw; height: 100vh;
-      overflow: hidden; background-color: black;
+      width: 100%; height: 100%;
+      overflow: hidden; background: black;
+      font-family: 'Courier New', monospace;
     }
-
+    /* Full-screen responsive background */
     #game-container {
-      width: 100vw; height: 100vh;
+      position: relative;
+      width: 100%; height: 100%;
       background: url('background.png') center center no-repeat;
-      background-size: contain; position: relative;
+      background-size: cover;
     }
-
+    /* Player sprite */
     #player {
-      width: 320px; height: 320px;
-      background: url('player_idle.png') no-repeat center center;
-      background-size: contain; image-rendering: pixelated;
-      position: absolute; left: 0;
-      bottom: 80px;  /* baseline position above green */
+      position: absolute;
+      left: 0;
+      width: 10vw; max-width: 320px;
+      height: 5vw;  max-height: 160px; /* maintain original 2:1 ratio */
+      background: url('player_idle.png') center center no-repeat;
+      background-size: contain;
+      image-rendering: pixelated;
       transform-origin: center bottom;
     }
     #player.flipped { transform: scaleX(-1); }
-
-    #ground {
-      position: absolute; bottom: 0; left: 0;
-      width: 100%; height: 100px; background: transparent;
-    }
-
+    /* Speech bubble */
     .speech {
       position: absolute;
-      bottom: calc(100% + 10px);
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: white;
-      color: black;
-      padding: 12px 16px;
-      border: 4px solid red;
-      border-radius: 4px;
-      font-size: 20px;
-      font-family: 'Arial Black', sans-serif;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      white-space: normal;
-      width: 60%;
-      max-width: 600px;
+      bottom: 100%; /* above player */
+      left: 50%; transform: translateX(-50%);
+      background: white; color: black;
+      padding: 1vh 2vw;
+      border: 0.5vh solid red;
+      border-radius: 1vh;
+      font-size: 2vh;
+      font-weight: bold;
       text-align: center;
+      white-space: normal;
+      max-width: 60vw;
     }
   </style>
 </head>
 <body>
   <div id="game-container">
     <div id="player"></div>
-    <div id="ground"></div>
   </div>
 
   <script>
-    const player = document.getElementById('player');
     const container = document.getElementById('game-container');
-    const playerWidth = 320;
-    const backgroundWidth = 1080; // fixed width of your background image
-const leftLimit = (container.clientWidth - backgroundWidth) / 2;
-const rightLimit = container.clientWidth - leftLimit - playerWidth;
-const maxX = rightLimit;
-let posX = leftLimit + (backgroundWidth - playerWidth) / 2;
+    const player = document.getElementById('player');
+    const playerWidth = player.clientWidth;
+    /* Compute ground baseline (15% of viewport height) */
+    const groundY = container.clientHeight * 0.15;
+    /* Movement bounds: full background width */
+    const leftLimit = 0;
+    const rightLimit = container.clientWidth - playerWidth;
+    /* Initial player position: centered */
+    let posX = (container.clientWidth - playerWidth) / 2;
     let posY = 0;
-    let isJumping = false;
-    let jumpSpeed = 0;
+    let isJumping = false, jumpSpeed = 0;
     const gravity = 0.8;
-    const groundY = 80;
-    let keysHeld = {};
-    let alertTriggered = false;
     let canMove = false;
 
-    // Create and attach speech bubble
+    /* Initial speech bubble */
     const bubble = document.createElement('div');
     bubble.className = 'speech';
     bubble.textContent = 'НУ И ГДЕ МОИ ПОДАРКИ?! КУДА ТЕПЕРЬ ИДТИ - НАЛЕВО ИЛИ НАПРАВО?';
     player.appendChild(bubble);
 
-    document.addEventListener('keydown', e => {
-      keysHeld[e.key.toLowerCase()] = true;
-      if (!canMove) {
-        canMove = true;
-        bubble.remove();
-      }
+    /* Input state */
+    const keys = {};
+    window.addEventListener('keydown', e => {
+      keys[e.key.toLowerCase()] = true;
+      if (!canMove) { canMove = true; bubble.remove(); }
+    });
+    window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+    window.addEventListener('touchstart', e => {
+      /* dismiss speech on tap */
+      if (!canMove) { canMove = true; bubble.remove(); }
     });
 
-    document.addEventListener('keyup', e => {
-      keysHeld[e.key.toLowerCase()] = false;
-    });
-
-    document.addEventListener('mousedown', () => {
-      if (!canMove) {
-        canMove = true;
-        bubble.remove();
-      }
-    });
-
-    function updatePlayerPosition() {
-      player.style.left = posX + 'px';
-      player.style.bottom = (groundY + posY) + 'px';
+    function updatePosition() {
+      player.style.left = `${posX}px`;
+      player.style.bottom = `${groundY + posY}px`;
     }
 
-    function gameLoop() {
+    function loop() {
       if (canMove) {
-        if (keysHeld['arrowleft'] || keysHeld['a']) {
+        if (keys['arrowleft'] || keys['a']) {
           posX = Math.max(leftLimit, posX - 4);
           player.classList.add('flipped');
-          if (posX <= leftLimit && !alertTriggered) {
-            alert('Transition to wizard here.');
-            alertTriggered = true;
-          }
-          }
         }
-        if (keysHeld['arrowright'] || keysHeld['d']) {
-          posX = Math.min(maxX, posX + 4);
+        if (keys['arrowright'] || keys['d']) {
+          posX = Math.min(rightLimit, posX + 4);
           player.classList.remove('flipped');
-          if (posX >= maxX && !alertTriggered) {
-            alert('Transition to wizard here.');
-            alertTriggered = true;
-          }
         }
-        if ((keysHeld[' '] || keysHeld['spacebar']) && !isJumping) {
-          isJumping = true;
-          jumpSpeed = 15;
+        if ((keys[' '] || keys['spacebar']) && !isJumping) {
+          isJumping = true; jumpSpeed = container.clientHeight * 0.03;
         }
       }
-
       if (isJumping) {
         posY += jumpSpeed;
         jumpSpeed -= gravity;
-        if (posY <= 0) {
-          posY = 0;
-          isJumping = false;
-        }
+        if (posY <= 0) { posY = 0; isJumping = false; }
       }
-
-      updatePlayerPosition();
-      requestAnimationFrame(gameLoop);
+      updatePosition();
+      requestAnimationFrame(loop);
     }
 
-    updatePlayerPosition();
-    gameLoop();
+    /* Start */
+    updatePosition();
+    loop();
   </script>
 </body>
 </html>
