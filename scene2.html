@@ -1,50 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Playable Scene</title>
   <style>
     html, body {
-      margin: 0;
-      padding: 0;
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden;
-      background-color: black;
+      margin: 0; padding: 0;
+      width: 100vw; height: 100vh;
+      overflow: hidden; background-color: black;
     }
 
     #game-container {
-      width: 100vw;
-      height: 100vh;
+      width: 100vw; height: 100vh;
       background: url('background.png') center center no-repeat;
-      background-size: contain;
-      position: relative;
+      background-size: contain; position: relative;
     }
 
     #player {
-      width: 320px;
-      height: 320px;
+      width: 320px; height: 320px;
       background: url('player_idle.png') no-repeat center center;
-      background-size: contain;
-      image-rendering: pixelated;
-      position: absolute;
-      left: 0;
-      bottom: 80px; /* Adjusted to stand on green */
+      background-size: contain; image-rendering: pixelated;
+      position: absolute; left: 0;
+      bottom: 80px;  /* baseline position above green */
       transform-origin: center bottom;
     }
-
-    #player.flipped {
-      transform: scaleX(-1);
-    }
+    #player.flipped { transform: scaleX(-1); }
 
     #ground {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 100px;
-      background: transparent;
+      position: absolute; bottom: 0; left: 0;
+      width: 100%; height: 100px; background: transparent;
     }
 
     .speech {
@@ -78,7 +63,9 @@
     const player = document.getElementById('player');
     const container = document.getElementById('game-container');
     const playerWidth = 320;
-    const maxX = container.clientWidth - playerWidth;
+    const gameArea = document.getElementById('game-container');
+    const backgroundRect = gameArea.getBoundingClientRect();
+    const maxX = backgroundRect.width - playerWidth;
     let posX = (container.clientWidth - playerWidth) / 2;
     let posY = 0;
     let isJumping = false;
@@ -89,7 +76,7 @@
     let alertTriggered = false;
     let canMove = false;
 
-    // Add speech bubble
+    // Create and attach speech bubble
     const bubble = document.createElement('div');
     bubble.className = 'speech';
     bubble.textContent = 'НУ И ГДЕ МОИ ПОДАРКИ?! КУДА ТЕПЕРЬ ИДТИ - НАЛЕВО ИЛИ НАПРАВО?';
@@ -107,7 +94,7 @@
       keysHeld[e.key.toLowerCase()] = false;
     });
 
-    document.addEventListener('click', () => {
+    document.addEventListener('mousedown', () => {
       if (!canMove) {
         canMove = true;
         bubble.remove();
@@ -124,21 +111,21 @@
         if (keysHeld['arrowleft'] || keysHeld['a']) {
           posX = Math.max(0, posX - 4);
           player.classList.add('flipped');
-          if (posX === 0 && !alertTriggered) {
+          if (posX <= 0 && !alertTriggered) {
             alert('Transition to wizard here.');
             alertTriggered = true;
           }
+            alertTriggered = true;
+          }
         }
-
         if (keysHeld['arrowright'] || keysHeld['d']) {
           posX = Math.min(maxX, posX + 4);
           player.classList.remove('flipped');
-          if (posX === maxX && !alertTriggered) {
+          if (posX + playerWidth >= backgroundRect.width && !alertTriggered) {
             alert('Transition to wizard here.');
             alertTriggered = true;
           }
         }
-
         if ((keysHeld[' '] || keysHeld['spacebar']) && !isJumping) {
           isJumping = true;
           jumpSpeed = 15;
