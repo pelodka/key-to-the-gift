@@ -15,12 +15,11 @@
     }
 
     #game-container {
-      width: 1280px;
-      height: 720px;
-      background: url('background.png') no-repeat center center;
-      background-size: cover;
+      width: 100vw;
+      height: 100vh;
+      background: url('background.png') center center no-repeat;
+      background-size: contain;
       position: relative;
-      margin: 0 auto;
     }
 
     #player {
@@ -29,13 +28,14 @@
       background: url('player_idle.png') no-repeat center center;
       image-rendering: pixelated;
       position: absolute;
-      left: 608px;
+      left: 50%;
+      transform: translateX(-50%);
       bottom: 100px;
       transition: transform 0.1s;
     }
 
     #player.flipped {
-      transform: scaleX(-1);
+      transform: translateX(-50%) scaleX(-1);
     }
 
     #ground {
@@ -56,8 +56,7 @@
 
   <script>
     const player = document.getElementById('player');
-    const container = document.getElementById('game-container');
-    let posX = 608;
+    let posX = window.innerWidth / 2 - 32;
     let posY = 0;
     let isJumping = false;
     let jumpSpeed = 0;
@@ -66,6 +65,10 @@
     let currentFrame = 0;
     const frameCount = 4;
     let animInterval;
+
+    function updatePlayerPosition() {
+      player.style.left = posX + 'px';
+    }
 
     function startWalking() {
       clearInterval(animInterval);
@@ -102,12 +105,12 @@
       if (posX < 0) {
         alert("Switch to wizard1.html (left edge reached)");
         posX = 0;
-      } else if (posX + 64 > 1280) {
+      } else if (posX + 64 > window.innerWidth) {
         alert("Switch to wizard1.html (right edge reached)");
-        posX = 1280 - 64;
+        posX = window.innerWidth - 64;
       }
 
-      player.style.left = posX + 'px';
+      updatePlayerPosition();
 
       if (moved) startWalking();
     });
@@ -131,6 +134,7 @@
       requestAnimationFrame(gameLoop);
     }
 
+    updatePlayerPosition();
     gameLoop();
   </script>
 </body>
