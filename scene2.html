@@ -8,18 +8,19 @@
     html, body {
       margin: 0;
       padding: 0;
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100vh;
       overflow: hidden;
       background-color: black;
     }
 
     #game-container {
-      width: 100vw;
-      height: 100vh;
+      width: 1280px;
+      height: 720px;
       background: url('background.png') no-repeat center center;
       background-size: cover;
       position: relative;
+      margin: 0 auto;
     }
 
     #player {
@@ -28,9 +29,8 @@
       background: url('player_idle.png') no-repeat center center;
       image-rendering: pixelated;
       position: absolute;
-      left: 50%;
+      left: 608px;
       bottom: 100px;
-      transform: translateX(-50%);
       transition: transform 0.1s;
     }
 
@@ -56,7 +56,8 @@
 
   <script>
     const player = document.getElementById('player');
-    let posX = window.innerWidth / 2 - 32;
+    const container = document.getElementById('game-container');
+    let posX = 608;
     let posY = 0;
     let isJumping = false;
     let jumpSpeed = 0;
@@ -101,9 +102,9 @@
       if (posX < 0) {
         alert("Switch to wizard1.html (left edge reached)");
         posX = 0;
-      } else if (posX + 64 > window.innerWidth) {
+      } else if (posX + 64 > 1280) {
         alert("Switch to wizard1.html (right edge reached)");
-        posX = window.innerWidth - 64;
+        posX = 1280 - 64;
       }
 
       player.style.left = posX + 'px';
