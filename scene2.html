@@ -63,10 +63,11 @@
     const player = document.getElementById('player');
     const container = document.getElementById('game-container');
     const playerWidth = 320;
-    const gameArea = document.getElementById('game-container');
-    const backgroundRect = gameArea.getBoundingClientRect();
-    const maxX = backgroundRect.width - playerWidth;
-    let posX = (container.clientWidth - playerWidth) / 2;
+    const backgroundWidth = container.clientHeight * (9 / 16); // based on 16:9 aspect
+    const leftLimit = (container.clientWidth - backgroundWidth) / 2;
+    const rightLimit = container.clientWidth - leftLimit - playerWidth;
+    const maxX = rightLimit;
+    let posX = leftLimit + (backgroundWidth - playerWidth) / 2;
     let posY = 0;
     let isJumping = false;
     let jumpSpeed = 0;
@@ -109,19 +110,18 @@
     function gameLoop() {
       if (canMove) {
         if (keysHeld['arrowleft'] || keysHeld['a']) {
-          posX = Math.max(0, posX - 4);
+          posX = Math.max(leftLimit, posX - 4);
           player.classList.add('flipped');
-          if (posX <= 0 && !alertTriggered) {
+          if (posX <= leftLimit && !alertTriggered) {
             alert('Transition to wizard here.');
             alertTriggered = true;
           }
-            alertTriggered = true;
           }
         }
         if (keysHeld['arrowright'] || keysHeld['d']) {
           posX = Math.min(maxX, posX + 4);
           player.classList.remove('flipped');
-          if (posX + playerWidth >= backgroundRect.width && !alertTriggered) {
+          if (posX >= maxX && !alertTriggered) {
             alert('Transition to wizard here.');
             alertTriggered = true;
           }
