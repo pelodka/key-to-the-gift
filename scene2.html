@@ -51,12 +51,34 @@
       text-align: center;
       white-space: normal;
     }
+    /* Touch controls */
+    #touch-controls {
+      position: absolute;
+      bottom: 5vh;
+      left: 50%; transform: translateX(-50%);
+      display: flex; gap: 2vw;
+      pointer-events: none;
+    }
+    .touch-btn {
+      width: 12vw; height: 12vw;
+      max-width: 80px; max-height: 80px;
+      background: rgba(255,255,255,0.8);
+      border: 2px solid #333; border-radius: 50%;
+      font-size: 4vw; line-height: 1; text-align: center;
+      pointer-events: auto; user-select: none;
+    }
   </style>
 </head>
 <body>
   <div id="wrapper">
     <div id="game-container">
       <div id="player"></div>
+      <!-- Touch controls overlay -->
+      <div id="touch-controls">
+        <button id="btn-left" class="touch-btn">◀</button>
+        <button id="btn-jump" class="touch-btn">▲</button>
+        <button id="btn-right" class="touch-btn">▶</button>
+      </div>
     </div>
   </div>
 
@@ -78,7 +100,7 @@
     const leftLimit = 0, rightLimit = 1920 - 320;
     let posX = 800, posY = 0;
     let isJumping = false, jumpSpeed = 0;
-    const gravity = 0.8;    
+    const gravity = 0.8;
     let keys = {}, canMove = false;
 
     // Initial speech
@@ -87,6 +109,7 @@
     bubble.textContent = 'НУ И ГДЕ МОИ ПОДАРКИ?! КУДА ТЕПЕРЬ ИДТИ - НАЛЕВО ИЛИ НАПРАВО?';
     player.appendChild(bubble);
 
+    // Keyboard input
     window.addEventListener('keydown', e => {
       keys[e.key.toLowerCase()] = true;
       if (!canMove) { canMove = true; bubble.remove(); }
@@ -96,10 +119,24 @@
       if (!canMove) { canMove = true; bubble.remove(); }
     });
 
+    // Touch controls mapping
+    [['left','arrowleft'], ['jump',' '], ['right','arrowright']].forEach(([id, key]) => {
+      const btn = document.getElementById('btn-' + id);
+      btn.addEventListener('touchstart', e => {
+        e.preventDefault(); keys[key] = true;
+        if (!canMove) { canMove = true; bubble.remove(); }
+      }, {passive:false});
+      btn.addEventListener('touchend', e => {
+        e.preventDefault(); keys[key] = false;
+      }, {passive:false});
+    });
+
+    // Update position
     function updatePos() {
       player.style.left = posX + 'px';
       player.style.bottom = (100 + posY) + 'px';
     }
+    // Main loop
     function gameLoop() {
       if (canMove) {
         if (keys['arrowleft'] || keys['a']) {
@@ -117,15 +154,13 @@
         }
       }
       if (isJumping) {
-        posY += jumpSpeed;
-        jumpSpeed -= gravity;
+        posY += jumpSpeed; jumpSpeed -= gravity;
         if (posY <= 0) { posY = 0; isJumping = false; }
       }
       updatePos();
       requestAnimationFrame(gameLoop);
     }
-    updatePos();
-    gameLoop();
+    updatePos(); gameLoop();
   </script>
 </body>
 </html>
