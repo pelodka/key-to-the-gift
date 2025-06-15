@@ -9,17 +9,25 @@
     html, body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: black; font-family: 'Courier New', monospace; }
     /* Wrapper for scaling */
     #wrapper { position: absolute; top: 0; left: 0; width: 1920px; height: 1200px; transform-origin: top left; }
-    /* Game area */
+    /* Game area background */
     #game-container { position: relative; width: 100%; height: 100%; background: url('background.png') center center / cover no-repeat; }
     /* Player sprite */
     #player { position: absolute; width: 320px; height: 320px; bottom: 80px; transform-origin: center bottom;
                background: url('player_idle.png') center center no-repeat; background-size: contain; image-rendering: pixelated; }
     #player.flipped { transform: scaleX(-1); }
-    /* Wizard sprite (transparent background) */
-    #wizard { position: absolute; width: 320px; height: 320px; bottom: 80px;
-              left: 50%; transform: translateX(-50%);
-              background: url('wizard1.png') center center no-repeat; background-color: transparent;
-              background-size: contain; image-rendering: pixelated; }
+    /* Wizard sprite:
+       Ensure that wizard1.png is exported as a true transparent PNG (no baked-in checkerboard).
+       CSS will respect transparency via background-color: transparent. */
+    #wizard {
+      position: absolute; width: 320px; height: 320px; bottom: 80px;
+      left: 50%; transform: translateX(-50%);
+      /* Transparent background behind the image */
+      background-color: transparent;
+      /* Sprite image (transparent PNG) */
+      background: url('wizard1.png') center center no-repeat;
+      background-size: contain;
+      image-rendering: pixelated;
+    }
     /* Ground collision area */
     #ground { position: absolute; bottom: 0; left: 0; width: 100%; height: 100px; }
     /* Speech prompt above wizard */
@@ -76,17 +84,23 @@
     const dialogText = document.getElementById('dialog-text');
     const choicesDiv = document.getElementById('choices');
 
-    // URL param for spawn side: 'left' or 'right'
-    const params = new URLSearchParams(location.search);
-    const spawn = params.get('spawn') === 'right' ? 'right' : 'left';
+    // URL param for exit side from previous scene:
+    // 'left' means player exited left, so we spawn them on the right, and vice versa.
+    const params   = new URLSearchParams(location.search);
+    const exitSide = params.get('spawn');
+    // invert side: exit left -> spawn right, exit right -> spawn left
+    let spawn;
+    if (exitSide === 'left') spawn = 'right';
+    else if (exitSide === 'right') spawn = 'left';
+    else spawn = 'left'; // default
 
     // Movement bounds based on container size
-    const container    = document.getElementById('game-container');
-    const playerWidth  = 320;
-    const leftLimit    = 0;
-    const rightLimit   = container.clientWidth - playerWidth;
+    const container   = document.getElementById('game-container');
+    const playerWidth = 320;
+    const leftLimit   = 0;
+    const rightLimit  = container.clientWidth - playerWidth;
 
-    // Initial player position
+    // Initial player position based on spawn
     let posX = spawn === 'right' ? rightLimit : leftLimit;
     let posY = 0;
 
@@ -141,9 +155,7 @@
       overlay.style.display = 'block';
       dialogText.textContent = greeting;
       choicesDiv.innerHTML = '';
-      setTimeout(() => {
-        showQuestion();
-      }, 1000);
+      setTimeout(() => showQuestion(), 1000);
     }
 
     /**
@@ -163,13 +175,10 @@
           inDialog = false;
         }, 1500);
       } else {
-        // Incorrect answer flow
+        // Incorrect answer flow: show error then retry
         dialogText.textContent = 'Неправильно, попробуйте ещё.';
         choicesDiv.innerHTML = '';
-        // After a short delay, re-present the question and choices
-        setTimeout(() => {
-          showQuestion();
-        }, 1000);
+        setTimeout(() => showQuestion(), 1000);
       }
     }
 
@@ -200,7 +209,8 @@
     function checkTransition() {
       if (!interactionFinished) return;
       if (posX <= leftLimit || posX >= rightLimit) {
-        window.location.href = 'wizard02.html';
+        // preserve spawn param for next scene if needed
+        window.location.href = 'wizard02.html?spawn=' + (posX <= leftLimit ? 'left' : 'right');
       }
     }
 
