@@ -6,44 +6,38 @@
   <title>Wizard 1 Encounter</title>
   <style>
     /* Base reset */
-    html, body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: black; font-family: 'Courier New', monospace; }
-    /* Wrapper for scaling */
-    #wrapper { position: absolute; top: 0; left: 0; width: 1920px; height: 1200px; transform-origin: top left; }
+    html, body { margin:0; padding:0; width:100vw; height:100vh; overflow:hidden; background:black; font-family:'Courier New', monospace; }
+    /* Scaling wrapper */
+    #wrapper { position:absolute; top:0; left:0; width:1920px; height:1200px; transform-origin:top left; }
     /* Game area */
-    #game-container { position: relative; width: 100%; height: 100%; background: url('background.png') center center / cover no-repeat; }
-    /* Player sprite */
-    #player { position: absolute; width: 320px; height: 320px; bottom: 80px; /* same default vertical */ transform-origin: center bottom;
-              background: url('player_idle.png') center center no-repeat; background-size: contain; image-rendering: pixelated; }
-    #player.flipped { transform: scaleX(-1); }
-    /* Wizard sprite */
-    #wizard { position: absolute; width: 320px; height: 320px; bottom: 80px;
-              left: 50%; transform: translateX(-50%);
-              background: url('BE10FBCA-079E-443F-8855-B940A88CD3B0.png') center center no-repeat; background-size: contain; image-rendering: pixelated; }
-    /* Ground (invisible collision area) */
-    #ground { position: absolute; bottom: 0; left: 0; width: 100%; height: 100px; }
-    /* Speech prompt above wizard */
-    #prompt { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%);
-              background: white; color: black; padding: 8px 12px; border: 4px solid red; border-radius: 4px;
-              font-size: 24px; font-family: 'Arial Black'; text-transform: uppercase; pointer-events: none;
-              display: none; white-space: nowrap; }
-    /* Dialog overlay */
-    #dialog-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); display:none; }
-    #dialog-box { position: absolute; top:50%; left:50%; transform: translate(-50%,-50%);
-                  background: white; padding: 24px; border: 4px solid black; width: 600px; max-width: 80vw;
-                  font-family: 'Courier New', monospace; }
-    #dialog-text { margin-bottom: 16px; font-size: 20px; color: black; }
-    .choice-btn { display: block; margin: 8px 0; padding: 8px 12px; background: #eee; border: 2px solid #333;
-                  cursor: pointer; font-size: 18px; }
-    .choice-btn:hover { background: #ddd; }
+    #game-container { position:relative; width:100%; height:100%; background:url('background.png') center / contain no-repeat; }
+    /* Player & Wizard sprites */
+    #player, #wizard {
+      position:absolute; width:320px; height:320px; bottom:80px;
+      background-size:contain; image-rendering:pixelated; transform-origin:center bottom;
+    }
+    #player { background:url('player_idle.png') center no-repeat; left:0; }
+    #player.flipped { transform:scaleX(-1); }
+    #wizard { background:url('wizard1.png') center no-repeat; left:50%; transform:translateX(-50%); }
+    /* Prompt */
+    #prompt { display:none; position:absolute; bottom:calc(100% + 10px); left:50%; transform:translateX(-50%);
+               background:white; color:black; padding:8px 12px; border:4px solid red; border-radius:4px;
+               font-size:24px; font-family:'Arial Black'; text-transform:uppercase; pointer-events:none; }
+    /* Dialog */
+    #dialog-overlay { display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); }
+    #dialog-box { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+                  background:white; padding:24px; border:4px solid black; width:600px; max-width:80vw; }
+    #dialog-text { margin-bottom:16px; font-size:20px; color:black; }
+    .choice-btn { display:block; margin:8px 0; padding:8px 12px; background:#eee; border:2px solid #333;
+                  cursor:pointer; font-size:18px; }
+    .choice-btn:hover { background:#ddd; }
   </style>
 </head>
 <body>
   <div id="wrapper">
     <div id="game-container">
       <div id="player"></div>
-      <div id="wizard">
-        <div id="prompt">Press E</div>
-      </div>
+      <div id="wizard"><div id="prompt">Press E</div></div>
       <div id="ground"></div>
       <div id="dialog-overlay">
         <div id="dialog-box">
@@ -55,116 +49,130 @@
   </div>
 
   <script>
-    // responsive scale
+    // Responsive scaling
     function updateScale() {
-      const vw = window.innerWidth, vh = window.innerHeight;
-      const s = Math.min(vw/1920, vh/1200);
-      const w = document.getElementById('wrapper');
-      w.style.transform = `scale(${s})`;
-      w.style.left = `${(vw - 1920*s)/2}px`; w.style.top = `${(vh - 1200*s)/2}px`;
+      const vw=innerWidth, vh=innerHeight;
+      const s=Math.min(vw/1920, vh/1200);
+      const w=document.getElementById('wrapper');
+      w.style.transform=`scale(${s})`;
+      w.style.left=`${(vw-1920*s)/2}px`;
+      w.style.top=`${(vh-1200*s)/2}px`;
     }
     window.addEventListener('resize', updateScale);
     updateScale();
 
     // DOM refs
-    const player = document.getElementById('player');
-    const wizard = document.getElementById('wizard');
-    const prompt = document.getElementById('prompt');
-    const overlay = document.getElementById('dialog-overlay');
-    const dialogText = document.getElementById('dialog-text');
-    const choicesDiv = document.getElementById('choices');
+    const player = document.getElementById('player'),
+          wizard = document.getElementById('wizard'),
+          promptEl = document.getElementById('prompt'),
+          overlay = document.getElementById('dialog-overlay'),
+          dialogText = document.getElementById('dialog-text'),
+          choicesDiv = document.getElementById('choices');
 
-    // Determine spawn side from URL
-    const params = new URLSearchParams(location.search);
-    const spawn = params.get('spawn') === 'right' ? 'right' : 'left';
+    // Dialogue data
+    const greeting = 'Здравствуйте, путник!',
+          question = 'Что растёт под землей, но свет любит?',
+          answers = ['Грибы','Камни','Рыбы'],
+          correctIndex = 0,
+          tip = 'Правильно! Грибы не боятся темноты.';
 
-    // Compute horizontal limits
+    // Movement & interaction state
+    let posX, posY=0, isJumping=false, jumpSpeed=0, gravity=0.8;
+    let inDialog=false, interactionFinished=false;
     const container = document.getElementById('game-container');
-    const playerWidth = 320;
-    const leftLimit = 0;
-    const rightLimit = container.clientWidth - playerWidth;
-    // Spawn player
-    let posX = spawn === 'right' ? rightLimit : leftLimit;
-    let posY = 0;
+    const leftLimit = 0, rightLimit = container.clientWidth - 320;
 
-    // Wizard position (center)
-    const wizardX = (container.clientWidth - playerWidth) / 2;
+    // Spawn side
+    const spawn = new URLSearchParams(location.search).get('spawn')==='right' ? 'right' : 'left';
+    posX = spawn==='right' ? rightLimit : leftLimit;
+
+    // Initial render
+    updatePos(); checkProximity();
 
     // Input
     const keys = {};
-    document.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; });
-    document.addEventListener('keyup',   e => { keys[e.key.toLowerCase()] = false; });
+    window.addEventListener('keydown', e => {
+      keys[e.key.toLowerCase()] = true;
+      // E to start
+      if (!inDialog && !interactionFinished && (e.key.toLowerCase()==='e') && promptEl.style.display==='block') {
+        startDialog();
+      }
+    });
+    window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 
-    let inDialog = false;
-
+    // Position update
     function updatePos() {
       player.style.left = posX + 'px';
       player.style.bottom = (80 + posY) + 'px';
     }
 
-    // Show prompt when near wizard
+    // Proximity prompt
     function checkProximity() {
-      const dx = Math.abs(posX - wizardX);
-      if (dx < playerWidth*0.6 && !inDialog) {
-        prompt.style.display = 'block';
+      const wizardX = (container.clientWidth - 320)/2;
+      if (!inDialog && !interactionFinished && Math.abs(posX - wizardX) < 200) {
+        promptEl.style.display = 'block';
       } else {
-        prompt.style.display = 'none';
+        promptEl.style.display = 'none';
       }
     }
 
-    // Dialog data
-    const greeting = 'Здравствуйте, путник!';
-    const question = 'Что растёт под землей, но свет любит?';
-    const answers = [ 'Грибы', 'Камни', 'Рыбы' ];
-    const correctIndex = 0;
-    const tip = 'Правильно! Грибы не боятся темноты.';
-
+    // Show dialog
     function startDialog() {
       inDialog = true;
       overlay.style.display = 'block';
       dialogText.textContent = greeting;
       choicesDiv.innerHTML = '';
-      // after greeting, ask question
-      setTimeout(() => {
-        dialogText.textContent = question;
-        answers.forEach((ans, i) => {
-          const btn = document.createElement('button');
-          btn.className = 'choice-btn'; btn.textContent = ans;
-          btn.onclick = () => selectAnswer(i);
-          choicesDiv.appendChild(btn);
-        });
-      }, 1000);
+      setTimeout(askQuestion, 800);
+    }
+    function askQuestion() {
+      dialogText.textContent = question;
+      choicesDiv.innerHTML = '';
+      answers.forEach((ans,i) => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn'; btn.textContent = ans;
+        btn.onclick = () => selectAnswer(i);
+        choicesDiv.appendChild(btn);
+      });
     }
 
+    // Handle answer
     function selectAnswer(i) {
       choicesDiv.innerHTML = '';
       if (i === correctIndex) {
+        interactionFinished = true;
         dialogText.textContent = tip;
+        setTimeout(() => {
+          overlay.style.display = 'none';
+          inDialog = false;
+        }, 1200);
       } else {
         dialogText.textContent = 'Неправильно, попробуйте ещё.';
-        // allow retry
-        return;
+        setTimeout(askQuestion, 1000);
       }
-      // end dialog after tip
-      setTimeout(() => {
-        overlay.style.display = 'none';
-        inDialog = false;
-      }, 1500);
     }
 
+    // Main loop
     function gameLoop() {
-      if (!inDialog) {
-        if (keys['arrowleft'] || keys['a']) { posX = Math.max(leftLimit, posX - 4); player.classList.add('flipped'); }
-        if (keys['arrowright']|| keys['d']) { posX = Math.min(rightLimit, posX + 4); player.classList.remove('flipped'); }
-        if ((keys['e']|| keys['е']) && prompt.style.display==='block') { startDialog(); }
+      // Jump
+      if (!inDialog && (keys[' ']||keys['spacebar']) && !isJumping) {
+        isJumping = true; jumpSpeed = 15;
       }
-      updatePos();
-      checkProximity();
+      if (isJumping) {
+        posY += jumpSpeed; jumpSpeed -= gravity;
+        if (posY <= 0) { posY = 0; isJumping = false; }
+      }
+      // Movement after interaction finished
+      if (interactionFinished) {
+        if (keys['arrowleft']||keys['a']) { posX = Math.max(leftLimit, posX-4); player.classList.add('flipped'); }
+        if (keys['arrowright']||keys['d']) { posX = Math.min(rightLimit, posX+4); player.classList.remove('flipped'); }
+        // Edge transitions
+        if (posX <= leftLimit) location.href = 'wizard2.html?spawn=right';
+        if (posX >= rightLimit) location.href = 'wizard2.html?spawn=left';
+      }
+      updatePos(); checkProximity();
       requestAnimationFrame(gameLoop);
     }
-
-    updatePos();
-    gameLoop();
+    requestAnimationFrame(gameLoop);
   </script>
 </body>
 </html>
