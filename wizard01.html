@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,21 +12,22 @@
     /* Game area */
     #game-container { position: relative; width: 100%; height: 100%; background: url('background.png') center center / cover no-repeat; }
     /* Player sprite */
-    #player { position: absolute; width: 320px; height: 320px; bottom: 80px; /* same default vertical */ transform-origin: center bottom;
-              background: url('player_idle.png') center center no-repeat; background-size: contain; image-rendering: pixelated; }
+    #player { position: absolute; width: 320px; height: 320px; bottom: 80px; transform-origin: center bottom;
+               background: url('player_idle.png') center center no-repeat; background-size: contain; image-rendering: pixelated; }
     #player.flipped { transform: scaleX(-1); }
-    /* Wizard sprite */
+    /* Wizard sprite (transparent background) */
     #wizard { position: absolute; width: 320px; height: 320px; bottom: 80px;
               left: 50%; transform: translateX(-50%);
-              background: url('wizard1.png') center center no-repeat; background-size: contain; image-rendering: pixelated; }
-    /* Ground (invisible collision area) */
+              background: url('wizard1.png') center center no-repeat; background-color: transparent;
+              background-size: contain; image-rendering: pixelated; }
+    /* Ground collision area */
     #ground { position: absolute; bottom: 0; left: 0; width: 100%; height: 100px; }
     /* Speech prompt above wizard */
     #prompt { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%);
               background: white; color: black; padding: 8px 12px; border: 4px solid red; border-radius: 4px;
               font-size: 24px; font-family: 'Arial Black'; text-transform: uppercase; pointer-events: none;
               display: none; white-space: nowrap; }
-    /* Dialog overlay */
+    /* Dialog overlay styling */
     #dialog-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); display:none; }
     #dialog-box { position: absolute; top:50%; left:50%; transform: translate(-50%,-50%);
                   background: white; padding: 24px; border: 4px solid black; width: 600px; max-width: 80vw;
@@ -56,116 +56,199 @@
   </div>
 
   <script>
-    // responsive scale
+    // Responsive scaling for different viewports
     function updateScale() {
       const vw = window.innerWidth, vh = window.innerHeight;
       const s = Math.min(vw/1920, vh/1200);
       const w = document.getElementById('wrapper');
       w.style.transform = `scale(${s})`;
-      w.style.left = `${(vw - 1920*s)/2}px`; w.style.top = `${(vh - 1200*s)/2}px`;
+      w.style.left = `${(vw - 1920*s)/2}px`;
+      w.style.top  = `${(vh - 1200*s)/2}px`;
     }
     window.addEventListener('resize', updateScale);
     updateScale();
 
-    // DOM refs
-    const player = document.getElementById('player');
-    const wizard = document.getElementById('wizard');
-    const prompt = document.getElementById('prompt');
-    const overlay = document.getElementById('dialog-overlay');
+    // DOM elements
+    const player     = document.getElementById('player');
+    const wizard     = document.getElementById('wizard');
+    const prompt     = document.getElementById('prompt');
+    const overlay    = document.getElementById('dialog-overlay');
     const dialogText = document.getElementById('dialog-text');
     const choicesDiv = document.getElementById('choices');
 
-    // Determine spawn side from URL
+    // URL param for spawn side: 'left' or 'right'
     const params = new URLSearchParams(location.search);
     const spawn = params.get('spawn') === 'right' ? 'right' : 'left';
 
-    // Compute horizontal limits
-    const container = document.getElementById('game-container');
-    const playerWidth = 320;
-    const leftLimit = 0;
-    const rightLimit = container.clientWidth - playerWidth;
-    // Spawn player
+    // Movement bounds based on container size
+    const container    = document.getElementById('game-container');
+    const playerWidth  = 320;
+    const leftLimit    = 0;
+    const rightLimit   = container.clientWidth - playerWidth;
+
+    // Initial player position
     let posX = spawn === 'right' ? rightLimit : leftLimit;
     let posY = 0;
 
-    // Wizard position (center)
+    // Wizard is centered
     const wizardX = (container.clientWidth - playerWidth) / 2;
 
-    // Input
+    // Input tracking
     const keys = {};
     document.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; });
     document.addEventListener('keyup',   e => { keys[e.key.toLowerCase()] = false; });
 
+    // Jump physics
+    let isJumping = false;
+    let jumpSpeed = 0;
+    const gravity = 0.8;
+
+    // State flags
     let inDialog = false;
+    let interactionFinished = false;
 
-    function updatePos() {
-      player.style.left = posX + 'px';
-      player.style.bottom = (80 + posY) + 'px';
+    // --- Dialog Data ---
+    const greeting      = 'Здравствуйте, путник!';
+    const question      = 'Что растёт под землей, но свет любит?';
+    const answers       = ['Грибы', 'Камни', 'Рыбы'];
+    const correctIndex  = 0;  // index of correct answer in `answers`
+    const correctTip    = 'Правильно! Грибы не боятся темноты.';
+
+    /**
+     * showQuestion()
+     * Populates dialogText with `question` and
+     * creates choice buttons for each answer.
+     */
+    function showQuestion() {
+      dialogText.textContent = question;
+      choicesDiv.innerHTML = '';
+      answers.forEach((ans, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.textContent = ans;
+        btn.onclick = () => selectAnswer(i);
+        choicesDiv.appendChild(btn);
+      });
     }
 
-    // Show prompt when near wizard
-    function checkProximity() {
-      const dx = Math.abs(posX - wizardX);
-      if (dx < playerWidth*0.6 && !inDialog) {
-        prompt.style.display = 'block';
-      } else {
-        prompt.style.display = 'none';
-      }
-    }
-
-    // Dialog data
-    const greeting = 'Здравствуйте, путник!';
-    const question = 'Что растёт под землей, но свет любит?';
-    const answers = [ 'Грибы', 'Камни', 'Рыбы' ];
-    const correctIndex = 0;
-    const tip = 'Правильно! Грибы не боятся темноты.';
-
+    /**
+     * startDialog()
+     * Triggers the dialog overlay, shows a greeting,
+     * then after a delay, displays the question and choices.
+     */
     function startDialog() {
       inDialog = true;
       overlay.style.display = 'block';
       dialogText.textContent = greeting;
       choicesDiv.innerHTML = '';
-      // after greeting, ask question
       setTimeout(() => {
-        dialogText.textContent = question;
-        answers.forEach((ans, i) => {
-          const btn = document.createElement('button');
-          btn.className = 'choice-btn'; btn.textContent = ans;
-          btn.onclick = () => selectAnswer(i);
-          choicesDiv.appendChild(btn);
-        });
+        showQuestion();
       }, 1000);
     }
 
+    /**
+     * selectAnswer(i)
+     * Called when the player clicks an answer button.
+     * If incorrect: show error message then re-show question.
+     * If correct: show tip, mark interactionFinished, and close dialog.
+     */
     function selectAnswer(i) {
-      choicesDiv.innerHTML = '';
       if (i === correctIndex) {
-        dialogText.textContent = tip;
+        // Correct answer flow
+        dialogText.textContent = correctTip;
+        interactionFinished = true;
+        // Close dialog after showing tip
+        setTimeout(() => {
+          overlay.style.display = 'none';
+          inDialog = false;
+        }, 1500);
       } else {
+        // Incorrect answer flow
         dialogText.textContent = 'Неправильно, попробуйте ещё.';
-        // allow retry
-        return;
+        choicesDiv.innerHTML = '';
+        // After a short delay, re-present the question and choices
+        setTimeout(() => {
+          showQuestion();
+        }, 1000);
       }
-      // end dialog after tip
-      setTimeout(() => {
-        overlay.style.display = 'none';
-        inDialog = false;
-      }, 1500);
     }
 
+    /**
+     * updatePos()
+     * Applies posX/posY to the player's CSS for rendering.
+     */
+    function updatePos() {
+      player.style.left   = posX + 'px';
+      player.style.bottom = (80 + posY) + 'px';
+    }
+
+    /**
+     * checkProximity()
+     * Shows the "Press E" prompt if the player is
+     * within range of the wizard and not in dialog.
+     */
+    function checkProximity() {
+      const dx = Math.abs(posX - wizardX);
+      prompt.style.display = (dx < playerWidth * 0.6 && !inDialog) ? 'block' : 'none';
+    }
+
+    /**
+     * checkTransition()
+     * Once the dialog interaction is finished, enables
+     * transition to wizard02.html by walking off either edge.
+     */
+    function checkTransition() {
+      if (!interactionFinished) return;
+      if (posX <= leftLimit || posX >= rightLimit) {
+        window.location.href = 'wizard02.html';
+      }
+    }
+
+    /**
+     * gameLoop()
+     * Main loop: handles input, movement, jump physics,
+     * proximity prompt, and scene transition.
+     */
     function gameLoop() {
       if (!inDialog) {
-        if (keys['arrowleft'] || keys['a']) { posX = Math.max(leftLimit, posX - 4); player.classList.add('flipped'); }
-        if (keys['arrowright']|| keys['d']) { posX = Math.min(rightLimit, posX + 4); player.classList.remove('flipped'); }
-        if ((keys['e']|| keys['е']) && prompt.style.display==='block') { startDialog(); }
+        // Horizontal movement
+        if (keys['arrowleft'] || keys['a']) {
+          posX = Math.max(leftLimit, posX - 4);
+          player.classList.add('flipped');
+        }
+        if (keys['arrowright'] || keys['d']) {
+          posX = Math.min(rightLimit, posX + 4);
+          player.classList.remove('flipped');
+        }
+        // Jump: space, up-arrow, or W
+        if ((keys[' '] || keys['spacebar'] || keys['arrowup'] || keys['w']) && !isJumping) {
+          isJumping = true;
+          jumpSpeed = 15;
+        }
       }
+      // Jump physics
+      if (isJumping) {
+        posY += jumpSpeed;
+        jumpSpeed -= gravity;
+        if (posY <= 0) { posY = 0; isJumping = false; }
+      }
+
       updatePos();
       checkProximity();
+      checkTransition();
       requestAnimationFrame(gameLoop);
     }
 
+    // Kick off the loop
     updatePos();
     gameLoop();
+
+    // Trigger dialog on 'E' press when prompt is shown
+    document.addEventListener('keydown', e => {
+      if (!inDialog && e.key.toLowerCase() === 'e' && prompt.style.display === 'block') {
+        startDialog();
+      }
+    });
   </script>
 </body>
 </html>
