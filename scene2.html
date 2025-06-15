@@ -12,11 +12,29 @@
       overflow: hidden; background: black;
       font-family: 'Courier New', monospace;
     }
+    /* Transition timing var */
+    :root {
+      --transition-duration: 600ms;
+    }
+    /* Pixelated zoom-out animation */
+    @keyframes pixelate-out {
+      to {
+        transform: scale(0.1);
+        opacity: 0;
+      }
+    }
     /* Wrapper at base resolution */
     #wrapper {
       position: absolute; top: 0; left: 0;
       width: 1920px; height: 1200px;
       transform-origin: top left;
+      image-rendering: pixelated;
+    }
+    /* When transitioning, apply the pixellated zoom out */
+    #wrapper.transition {
+      animation: pixelate-out var(--transition-duration) steps(8) forwards;
+      /* center the zoom */
+      transform-origin: center center;
     }
     /* Game area */
     #game-container {
@@ -97,11 +115,12 @@
 
     // Scene2 logic
     const player = document.getElementById('player');
+    const wrapper = document.getElementById('wrapper');
     const leftLimit = 0, rightLimit = 1920 - 320;
     let posX = 800, posY = 0;
     let isJumping = false, jumpSpeed = 0;
     const gravity = 0.8;
-    let keys = {}, canMove = false;
+    let keys = {}, canMove = false, transitioning = false;
 
     // Initial speech
     const bubble = document.createElement('div');
@@ -109,45 +128,55 @@
     bubble.textContent = 'НУ И ГДЕ МОИ ПОДАРКИ?! КУДА ТЕПЕРЬ ИДТИ - НАЛЕВО ИЛИ НАПРАВО?';
     player.appendChild(bubble);
 
-    // Keyboard input
+    // Input handlers
     window.addEventListener('keydown', e => {
       keys[e.key.toLowerCase()] = true;
-      if (!canMove) { canMove = true; bubble.remove(); }
+      if (!canMove && !transitioning) { canMove = true; bubble.remove(); }
     });
     window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
     window.addEventListener('mousedown', () => {
-      if (!canMove) { canMove = true; bubble.remove(); }
+      if (!canMove && !transitioning) { canMove = true; bubble.remove(); }
     });
-
-    // Touch controls mapping
     [['left','arrowleft'], ['jump',' '], ['right','arrowright']].forEach(([id, key]) => {
       const btn = document.getElementById('btn-' + id);
       btn.addEventListener('touchstart', e => {
         e.preventDefault(); keys[key] = true;
-        if (!canMove) { canMove = true; bubble.remove(); }
+        if (!canMove && !transitioning) { canMove = true; bubble.remove(); }
       }, {passive:false});
       btn.addEventListener('touchend', e => {
         e.preventDefault(); keys[key] = false;
       }, {passive:false});
     });
 
-    // Update position
+    // Position updater
     function updatePos() {
       player.style.left = posX + 'px';
       player.style.bottom = (100 + posY) + 'px';
     }
-    // Main loop
+
+    // Start the pixelated transition then navigate
+    function startTransition() {
+      if (transitioning) return;
+      transitioning = true;
+      canMove = false;
+      wrapper.classList.add('transition');
+      setTimeout(() => {
+        window.location.href = 'wizard01.html';
+      }, 600); // must match --transition-duration
+    }
+
+    // Main game loop
     function gameLoop() {
-      if (canMove) {
+      if (canMove && !transitioning) {
         if (keys['arrowleft'] || keys['a']) {
           posX = Math.max(leftLimit, posX - 4);
           player.classList.add('flipped');
-          if (posX === leftLimit) alert('Transition to wizard1.html');
+          if (posX === leftLimit) startTransition();
         }
         if (keys['arrowright'] || keys['d']) {
           posX = Math.min(rightLimit, posX + 4);
           player.classList.remove('flipped');
-          if (posX === rightLimit) alert('Transition to wizard1.html');
+          if (posX === rightLimit) startTransition();
         }
         if ((keys[' '] || keys['spacebar']) && !isJumping) {
           isJumping = true; jumpSpeed = 15;
@@ -160,7 +189,9 @@
       updatePos();
       requestAnimationFrame(gameLoop);
     }
-    updatePos(); gameLoop();
+
+    updatePos();
+    gameLoop();
   </script>
 </body>
 </html>
