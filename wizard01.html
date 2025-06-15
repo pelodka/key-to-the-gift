@@ -1,44 +1,41 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Wizard 1 Encounter</title>
   <style>
     /* Base reset */
-    html, body { margin:0; padding:0; width:100vw; height:100vh; overflow:hidden; background:black; font-family:'Courier New', monospace; }
-    /* Scaling wrapper */
-    #wrapper { position:absolute; top:0; left:0; width:1920px; height:1200px; transform-origin:top left; }
+    html, body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: black; font-family: 'Courier New', monospace; }
+    /* Wrapper for scaling */
+    #wrapper { position: absolute; top: 0; left: 0; width: 1920px; height: 1200px; transform-origin: top left; }
     /* Game area */
-    #game-container { position:relative; width:100%; height:100%; background:url('background.png') center / contain no-repeat; }
-    /* Player & Wizard sprites */
-    #player, #wizard {
-      position:absolute; width:320px; height:320px; bottom:80px;
-      background-size:contain; image-rendering:pixelated; transform-origin:center bottom;
-    }
-    #player { background:url('player_idle.png') center no-repeat; left:0; }
-    #player.flipped { transform:scaleX(-1); }
-    #wizard { background:url('wizard1.png') center no-repeat; left:50%; transform:translateX(-50%); }
-    /* Prompt above wizard */
-    #prompt {
-      position:absolute; bottom:calc(100% + 10px); left:50%; transform:translateX(-50%);
-      background:white; color:black; padding:8px 12px; border:4px solid red; border-radius:4px;
-      font-size:24px; font-family:'Arial Black'; text-transform:uppercase; pointer-events:none;
-      display:none; white-space:nowrap;
-    }
+    #game-container { position: relative; width: 100%; height: 100%; background: url('background.png') center center / cover no-repeat; }
+    /* Player sprite */
+    #player { position: absolute; width: 320px; height: 320px; bottom: 80px; /* same default vertical */ transform-origin: center bottom;
+              background: url('player_idle.png') center center no-repeat; background-size: contain; image-rendering: pixelated; }
+    #player.flipped { transform: scaleX(-1); }
+    /* Wizard sprite */
+    #wizard { position: absolute; width: 320px; height: 320px; bottom: 80px;
+              left: 50%; transform: translateX(-50%);
+              background: url('wizard1.png') center center no-repeat; background-size: contain; image-rendering: pixelated; }
+    /* Ground (invisible collision area) */
+    #ground { position: absolute; bottom: 0; left: 0; width: 100%; height: 100px; }
+    /* Speech prompt above wizard */
+    #prompt { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%);
+              background: white; color: black; padding: 8px 12px; border: 4px solid red; border-radius: 4px;
+              font-size: 24px; font-family: 'Arial Black'; text-transform: uppercase; pointer-events: none;
+              display: none; white-space: nowrap; }
     /* Dialog overlay */
-    #dialog-overlay { display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); }
-    #dialog-box {
-      position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-      background:white; padding:24px; border:4px solid black; width:600px; max-width:80vw;
-      font-family:'Courier New', monospace;
-    }
-    #dialog-text { margin-bottom:16px; font-size:20px; color:black; }
-    .choice-btn {
-      display:block; margin:8px 0; padding:8px 12px; background:#eee; border:2px solid #333;
-      cursor:pointer; font-size:18px;
-    }
-    .choice-btn:hover { background:#ddd; }
+    #dialog-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); display:none; }
+    #dialog-box { position: absolute; top:50%; left:50%; transform: translate(-50%,-50%);
+                  background: white; padding: 24px; border: 4px solid black; width: 600px; max-width: 80vw;
+                  font-family: 'Courier New', monospace; }
+    #dialog-text { margin-bottom: 16px; font-size: 20px; color: black; }
+    .choice-btn { display: block; margin: 8px 0; padding: 8px 12px; background: #eee; border: 2px solid #333;
+                  cursor: pointer; font-size: 18px; }
+    .choice-btn:hover { background: #ddd; }
   </style>
 </head>
 <body>
@@ -59,129 +56,114 @@
   </div>
 
   <script>
-    // Responsive scaling
+    // responsive scale
     function updateScale() {
       const vw = window.innerWidth, vh = window.innerHeight;
       const s = Math.min(vw/1920, vh/1200);
       const w = document.getElementById('wrapper');
       w.style.transform = `scale(${s})`;
-      w.style.left = `${(vw - 1920*s)/2}px`;
-      w.style.top  = `${(vh - 1200*s)/2}px`;
+      w.style.left = `${(vw - 1920*s)/2}px`; w.style.top = `${(vh - 1200*s)/2}px`;
     }
     window.addEventListener('resize', updateScale);
     updateScale();
 
     // DOM refs
-    const player = document.getElementById('player'),
-          wizard = document.getElementById('wizard'),
-          promptEl = document.getElementById('prompt'),
-          overlay = document.getElementById('dialog-overlay'),
-          dialogText = document.getElementById('dialog-text'),
-          choicesDiv = document.getElementById('choices');
+    const player = document.getElementById('player');
+    const wizard = document.getElementById('wizard');
+    const prompt = document.getElementById('prompt');
+    const overlay = document.getElementById('dialog-overlay');
+    const dialogText = document.getElementById('dialog-text');
+    const choicesDiv = document.getElementById('choices');
 
-    // Dialogue data
-    const greeting = 'Здравствуйте, путник!',
-          question = 'Что растёт под землей, но свет любит?',
-          answers = ['Грибы','Камни','Рыбы'],
-          correctIndex = 0,
-          tip = 'Правильно! Грибы не боятся темноты.';
+    // Determine spawn side from URL
+    const params = new URLSearchParams(location.search);
+    const spawn = params.get('spawn') === 'right' ? 'right' : 'left';
 
-    // Movement & state
-    let posX, posY = 0, isJumping = false, jumpSpeed = 0, gravity = 0.8;
-    let inDialog = false, interactionFinished = false;
+    // Compute horizontal limits
     const container = document.getElementById('game-container');
     const playerWidth = 320;
     const leftLimit = 0;
     const rightLimit = container.clientWidth - playerWidth;
+    // Spawn player
+    let posX = spawn === 'right' ? rightLimit : leftLimit;
+    let posY = 0;
 
-    // Spawn side
-    const params = new URLSearchParams(location.search);
-    const spawn = params.get('spawn') === 'right' ? 'right' : 'left';
-    posX = (spawn === 'right') ? rightLimit : leftLimit;
+    // Wizard position (center)
+    const wizardX = (container.clientWidth - playerWidth) / 2;
 
-    // Initialize position
+    // Input
+    const keys = {};
+    document.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; });
+    document.addEventListener('keyup',   e => { keys[e.key.toLowerCase()] = false; });
+
+    let inDialog = false;
+
     function updatePos() {
       player.style.left = posX + 'px';
       player.style.bottom = (80 + posY) + 'px';
     }
 
-    // Proximity prompt
+    // Show prompt when near wizard
     function checkProximity() {
-      const wizardX = (container.clientWidth - playerWidth) / 2;
-      promptEl.style.display = (!inDialog && !interactionFinished && Math.abs(posX - wizardX) < (playerWidth*0.6))
-                              ? 'block' : 'none';
+      const dx = Math.abs(posX - wizardX);
+      if (dx < playerWidth*0.6 && !inDialog) {
+        prompt.style.display = 'block';
+      } else {
+        prompt.style.display = 'none';
+      }
     }
 
-    // Dialog control
+    // Dialog data
+    const greeting = 'Здравствуйте, путник!';
+    const question = 'Что растёт под землей, но свет любит?';
+    const answers = [ 'Грибы', 'Камни', 'Рыбы' ];
+    const correctIndex = 0;
+    const tip = 'Правильно! Грибы не боятся темноты.';
+
     function startDialog() {
       inDialog = true;
       overlay.style.display = 'block';
       dialogText.textContent = greeting;
       choicesDiv.innerHTML = '';
-      setTimeout(askQuestion, 800);
+      // after greeting, ask question
+      setTimeout(() => {
+        dialogText.textContent = question;
+        answers.forEach((ans, i) => {
+          const btn = document.createElement('button');
+          btn.className = 'choice-btn'; btn.textContent = ans;
+          btn.onclick = () => selectAnswer(i);
+          choicesDiv.appendChild(btn);
+        });
+      }, 1000);
     }
-    function askQuestion() {
-      dialogText.textContent = question;
-      choicesDiv.innerHTML = '';
-      answers.forEach((ans, i) => {
-        const btn = document.createElement('button');
-        btn.className = 'choice-btn'; btn.textContent = ans;
-        btn.onclick = () => selectAnswer(i);
-        choicesDiv.appendChild(btn);
-      });
-    }
+
     function selectAnswer(i) {
       choicesDiv.innerHTML = '';
       if (i === correctIndex) {
-        interactionFinished = true;
         dialogText.textContent = tip;
-        setTimeout(() => {
-          overlay.style.display = 'none';
-          inDialog = false;
-        }, 1200);
       } else {
         dialogText.textContent = 'Неправильно, попробуйте ещё.';
-        setTimeout(askQuestion, 1000);
+        // allow retry
+        return;
       }
+      // end dialog after tip
+      setTimeout(() => {
+        overlay.style.display = 'none';
+        inDialog = false;
+      }, 1500);
     }
 
-    // Input handling
-    const keys = {};
-    window.addEventListener('keydown', e => {
-      keys[e.key.toLowerCase()] = true;
-      if (!inDialog && !interactionFinished && e.key.toLowerCase() === 'e' && promptEl.style.display === 'block') {
-        startDialog();
-      }
-      // Jump
-      if (!inDialog && (e.key === ' ' || e.key.toLowerCase() === 'spacebar') && !isJumping) {
-        isJumping = true; jumpSpeed = 15;
-      }
-    });
-    window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
-
-    // Main loop
     function gameLoop() {
-      // Jump physics
-      if (isJumping) {
-        posY += jumpSpeed; jumpSpeed -= gravity;
-        if (posY <= 0) { posY = 0; isJumping = false; }
+      if (!inDialog) {
+        if (keys['arrowleft'] || keys['a']) { posX = Math.max(leftLimit, posX - 4); player.classList.add('flipped'); }
+        if (keys['arrowright']|| keys['d']) { posX = Math.min(rightLimit, posX + 4); player.classList.remove('flipped'); }
+        if ((keys['e']|| keys['е']) && prompt.style.display==='block') { startDialog(); }
       }
-      // Movement after dialogue
-      if (interactionFinished) {
-        if (keys['arrowleft'] || keys['a']) {
-          posX = Math.max(leftLimit, posX - 4); player.classList.add('flipped');
-        }
-        if (keys['arrowright'] || keys['d']) {
-          posX = Math.min(rightLimit, posX + 4); player.classList.remove('flipped');
-        }
-        if (posX <= leftLimit) window.location.href = 'wizard2.html?spawn=right';
-        if (posX >= rightLimit) window.location.href = 'wizard2.html?spawn=left';
-      }
-      updatePos(); checkProximity();
+      updatePos();
+      checkProximity();
       requestAnimationFrame(gameLoop);
     }
 
-    // Start
     updatePos();
     gameLoop();
   </script>
