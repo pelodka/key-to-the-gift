@@ -139,21 +139,39 @@
       }, 0);
     }
 
-    // Handle answer
+    // Handle answer (amended)
     function selectAnswer(i) {
+      inDialog = true;
+      overlay.style.display = 'block';
+      choicesDiv.innerHTML = '';
+
       if (i === correctIdx) {
         dialogText.textContent = correctTip;
-        interactionFinished = true;
-        setTimeout(() => {
-          overlay.style.display = 'none';
-          inDialog = false;
-          setupCollectible();
-        }, 1500);
       } else {
         dialogText.textContent = 'Неправильно, попробуйте ещё.';
-        choicesDiv.innerHTML = '';
-        setTimeout(showQuestion, 1000);
       }
+
+      // Wait until any keypress or click
+      const onInput = () => {
+        cleanup();
+        overlay.style.display = 'none';
+        inDialog = false;
+
+        if (i === correctIdx) {
+          interactionFinished = true;
+          setupCollectible();
+        } else {
+          showQuestion();
+        }
+      };
+
+      const cleanup = () => {
+        window.removeEventListener('keydown', onInput);
+        window.removeEventListener('mousedown', onInput);
+      };
+
+      window.addEventListener('keydown', onInput);
+      window.addEventListener('mousedown', onInput);
     }
 
     // Set up collectible block
@@ -212,7 +230,7 @@
         else if (!waitingBlock) {
           overlay.style.display = 'block';
           dialogText.textContent = 'Иди же дальше и собери все части ключа!';
-          choicesDiv.innerHTML = ''; // clear any old buttons
+          choicesDiv.innerHTML = '';
           setTimeout(() => { overlay.style.display = 'none'; }, 2000);
         }
       }
