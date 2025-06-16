@@ -13,7 +13,7 @@
     #game-container { position: relative; width: 100%; height: 100%; background: url('background.png') center center / cover no-repeat; }
     /* Player sprite */
     #player {
-      position: absolute; width: 320px; height: 320px; transform-origin: center bottom;
+      position: absolute; width: 320px; height: 320px; bottom: 80px; transform-origin: center bottom;
       background: url('player_idle.png') center center no-repeat;
       background-size: contain; image-rendering: pixelated;
     }
@@ -114,26 +114,23 @@
     updateScale();
 
     // DOM refs
-    const player             = document.getElementById('player');
-    const gameArea           = document.getElementById('game-container');
-    const prompt             = document.getElementById('prompt');
-    const overlayPuzzle      = document.getElementById('puzzle-overlay');
-    const dialogName         = document.getElementById('dialog-name');
-    const dialogTextPuzzle   = document.getElementById('dialog-text');
-    const blocksDiv          = document.getElementById('blocks');
-    const rejectContainer    = document.getElementById('rejectContainer');
-    const approveContainer   = document.getElementById('approveContainer');
-    const rejectArea         = document.getElementById('rejectArea');
-    const approveArea        = document.getElementById('approveArea');
-
-    // start on the ground
-    player.style.bottom = '80px';
+    const player           = document.getElementById('player');
+    const gameArea         = document.getElementById('game-container');
+    const prompt           = document.getElementById('prompt');
+    const overlayPuzzle    = document.getElementById('puzzle-overlay');
+    const dialogName       = document.getElementById('dialog-name');
+    const dialogTextPuzzle = document.getElementById('dialog-text');
+    const blocksDiv        = document.getElementById('blocks');
+    const rejectContainer  = document.getElementById('rejectContainer');
+    const approveContainer = document.getElementById('approveContainer');
+    const rejectArea       = document.getElementById('rejectArea');
+    const approveArea      = document.getElementById('approveArea');
 
     // Puzzle data
     const rejectItems = [
       'Приказ об установлении дресс-кода для всех работников в любое время года - только черный костюм',
       'Приказ об объявлении выговора работникам, не употреблявшим коньяк Арарат на последнем корпоративе',
-      'Ձայնագրություն Երևանի աշխատակիցներին շտապաբար վերադարձնելու մասին Պետերբուրգ։',
+      'Ձայնագրություն Երևանի աշխատակիցներին շտապաբար վերադարձնելու մասին Պետերբուրգ。',
       'Приказ об окончании ковида в связи со срочным переездом',
       'Приказ об использовании eMM в работе всех департаментов'
     ];
@@ -156,8 +153,12 @@
       interactionFinished = true;
       overlayPuzzle.style.display = 'block';
       dialogName.textContent = '';
-      dialogTextPuzzle.textContent = 'Ох, как хорошо что ты здесь, Саша! Все приказы в моей папке перепутались, помоги разобраться!';
-      const proceed = () => {
+      dialogTextPuzzle.textContent = 
+        'Ох, как хорошо что ты здесь, Саша! Все приказы в моей папке перепутались, помоги разобраться!';
+      
+      const proceed = e => {
+        // ignore the original 'E' press
+        if (e.type === 'keydown' && e.key.toLowerCase() === 'e') return;
         window.removeEventListener('keydown', proceed);
         window.removeEventListener('mousedown', proceed);
         showPuzzle();
@@ -170,7 +171,7 @@
       dialogName.textContent = 'НА ПОДПИСЬ';
       dialogTextPuzzle.textContent = '';
       blocksDiv.innerHTML = '';
-      items.forEach((text, i) => {
+      items.forEach((text,i) => {
         const d = document.createElement('div');
         d.className = 'block';
         d.textContent = text;
@@ -195,8 +196,7 @@
           ? rejectSet.has(block.textContent)
           : !rejectSet.has(block.textContent);
         if (correct) {
-          block.remove();
-          placedCount++;
+          block.remove(); placedCount++;
           if (placedCount === totalCount) finishPuzzle();
         } else {
           dialogTextPuzzle.textContent = 'Что на это скажет Марк?';
@@ -212,7 +212,9 @@
       rejectContainer.style.display   = 'none';
       approveContainer.style.display  = 'none';
       dialogTextPuzzle.textContent = 'Фух! Большое спасибо! Вот еще одна подсказка - GOLDEN.';
-      const proceed = () => {
+      
+      const proceed = e => {
+        if (e.type === 'keydown' && e.key.toLowerCase() === 'e') return;
         window.removeEventListener('keydown', proceed);
         window.removeEventListener('mousedown', proceed);
         overlayPuzzle.style.display = 'none';
@@ -222,8 +224,8 @@
       window.addEventListener('mousedown', proceed);
     }
 
-    // Collectible spawn
-    function setupCollectible() { /* unchanged */ 
+    // Collectible spawn (unchanged)…
+    function setupCollectible() {
       waitingBlock = true;
       player.style.background = "url('player_hands.png') center center no-repeat";
       player.style.backgroundSize = 'contain';
@@ -247,7 +249,8 @@
       });
     }
 
-    // Movement & game loop
+    // Movement & game loop (unchanged)...
+
     let keys = {}, isJumping = false, jumpSpeed = 0, gravity = 0.8;
     function checkProximity() {
       const wizardX = (gameArea.clientWidth - 320) / 2;
@@ -255,26 +258,23 @@
     }
     function gameLoop() {
       if (!waitingBlock) {
-        if (keys['arrowleft'] || keys['a']) {
+        if (keys['arrowleft']||keys['a']) {
           player.style.left = Math.max(0, player.offsetLeft - 4) + 'px';
           player.classList.add('flipped');
         }
-        if (keys['arrowright'] || keys['d']) {
-          player.style.left = Math.min(gameArea.clientWidth - 320, player.offsetLeft + 4) + 'px';
+        if (keys['arrowright']||keys['d']) {
+          player.style.left = Math.min(gameArea.clientWidth-320, player.offsetLeft + 4) + 'px';
           player.classList.remove('flipped');
         }
-        if ((keys[' '] || keys['arrowup'] || keys['w']) && !isJumping) {
-          isJumping = true;
-          jumpSpeed = 15;
+        if ((keys[' ']||keys['arrowup']||keys['w']) && !isJumping) {
+          isJumping = true; jumpSpeed = 15;
         }
       }
       if (isJumping) {
-        let bottom = parseFloat(player.style.bottom);
-        bottom += jumpSpeed;
-        player.style.bottom = bottom + 'px';
+        const bottom = parseFloat(player.style.bottom) || 0;
+        player.style.bottom = bottom + jumpSpeed + 'px';
         jumpSpeed -= gravity;
-        // land at 80px
-        if (bottom <= 80) {
+        if (bottom + jumpSpeed <= 80) {
           player.style.bottom = '80px';
           isJumping = false;
         }
@@ -297,9 +297,7 @@
         }
       }
     });
-    document.addEventListener('keyup', e => {
-      keys[e.key.toLowerCase()] = false;
-    });
+    document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
   </script>
 </body>
 </html>
