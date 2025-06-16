@@ -31,19 +31,21 @@
     /* Dialog overlay */
     #dialog-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); display:none; }
     #dialog-box {
-      position: absolute; top:50%; left:50%; transform: translate(-50%,-50%);
+      position: relative; top:50%; left:50%; transform: translate(-50%,-50%);
       background: white; padding: 24px; border: 4px solid black; width: 800px; max-width: 90vw;
       font-family: 'Courier New', monospace; text-align: center;
     }
-    #dialog-text { margin-bottom: 16px; font-size: 28px; color: black; }
-    /* Puzzle styling */
-    .draggable-box {
-      width: 60px; height: 40px; margin: 0 10px; cursor: grab;
+    #box-container {
+      display: flex; justify-content: center; position: relative; top: 0; width: 100%; margin-bottom: 20px;
     }
+    .draggable-box {
+      width: 60px; height: 40px; margin: 0 10px; cursor: grab; image-rendering: pixelated;
+    }
+    #dialog-text { margin: 20px 0 0; font-size: 28px; color: black; }
     .drop-target {
       display: inline-block; width: 120px; border-bottom: 2px solid #333; margin: 0 5px; vertical-align: middle; min-height: 36px;
+      cursor: pointer;
     }
-    #box-container { margin-bottom: 20px; }
     #open-btn {
       display: inline-block; margin-top: 20px; padding: 10px 20px; background: #eee; border: 2px solid #333;
       font-size: 24px; cursor: pointer;
@@ -62,8 +64,8 @@
       <div id="ground"></div>
       <div id="dialog-overlay">
         <div id="dialog-box">
-          <p id="dialog-text"></p>
           <div id="box-container"></div>
+          <p id="dialog-text"></p>
           <button id="open-btn">ОТКРЫТЬ</button>
           <div id="feedback"></div>
         </div>
@@ -85,14 +87,14 @@
     updateScale();
 
     // DOM refs
-    const player     = document.getElementById('player');
-    const gameArea   = document.getElementById('game-container');
-    const prompt     = document.getElementById('prompt');
-    const overlay    = document.getElementById('dialog-overlay');
-    const dialogText = document.getElementById('dialog-text');
-    const boxContainer = document.getElementById('box-container');
-    const openBtn    = document.getElementById('open-btn');
-    const feedback   = document.getElementById('feedback');
+    const player      = document.getElementById('player');
+    const gameArea    = document.getElementById('game-container');
+    const prompt      = document.getElementById('prompt');
+    const overlay     = document.getElementById('dialog-overlay');
+    const dialogText  = document.getElementById('dialog-text');
+    const boxContainer= document.getElementById('box-container');
+    const openBtn     = document.getElementById('open-btn');
+    const feedback    = document.getElementById('feedback');
 
     // Movement bounds
     const playerWidth = 320;
@@ -100,18 +102,23 @@
     const rightLimit  = gameArea.clientWidth - playerWidth;
 
     // Spawn logic
-    const params   = new URLSearchParams(location.search);
-    const exitSide = params.get('exit');
-    let spawnSide = (exitSide === 'left') ? 'right' : 'left';
-    let posX = (spawnSide === 'left') ? leftLimit : rightLimit;
-    let posY = 0;
+    const params    = new URLSearchParams(location.search);
+    const exitSide  = params.get('exit');
+    let spawnSide   = (exitSide === 'left') ? 'right' : 'left';
+    let posX        = (spawnSide === 'left') ? leftLimit : rightLimit;
+    let posY        = 0;
 
     // State
     let keys = {}, isJumping = false, jumpSpeed = 0, gravity = 0.8;
-    let inDialog = false, puzzleActive = false;
+    let inDialog = false;
     let dragData = null;
 
-    // Show initial greeting then puzzle
+    // Puzzle data
+    const colors = ['black','red','gold'];
+    const words  = { black: 'SWARTZ', red: 'BLUTEGE', gold: 'GOLDENE' };
+    const correctOrder = ['black','red','gold'];
+
+    // Start dialog and puzzle
     const greeting = 'А вот и последняя загадка! Подарки уже совсем рядом!';
     function startDialog() {
       inDialog = true;
@@ -121,111 +128,110 @@
       openBtn.style.display = 'none';
       feedback.textContent = '';
       setTimeout(() => {
-        dialogText.textContent = 'Aus der _________ der Knechtschaft durch _________ Schlachten ans _________ Licht der Freiheit.';
+        dialogText.textContent = 'Aus der _________ der Knechtschaft через _________ Schlachten ans _________ Licht der Freiheit.';
         setupPuzzle();
       }, 1000);
     }
 
-    // Set up puzzle elements
-    const colors = ['black','red','gold'];
-    const words = { black: 'SWARTZ', red: 'BLUTEGE', gold: 'GOLDENE' };
-    const correctOrder = ['black','red','gold'];
+    function createBox(color) {
+      const box = document.createElement('div');
+      box.className = 'draggable-box';
+      box.draggable  = true;
+      box.dataset.color = color;
+      box.style.background = color;
+      box.addEventListener('dragstart', e => {
+        dragData = { color, from: 'box' };
+      });
+      return box;
+    }
 
     function setupPuzzle() {
       boxContainer.innerHTML = '';
-      // Create draggable boxes
-      colors.forEach(color => {
-        const box = document.createElement('div');
-        box.className = 'draggable-box';
-        box.draggable = true;
-        box.style.background = color;
-        box.dataset.color = color;
-        box.addEventListener('dragstart', e => {
-          dragData = color;
-        });
-        boxContainer.appendChild(box);
-      });
-      // Create drop targets in dialog text
+      // initial boxes
+      colors.forEach(color => boxContainer.appendChild(createBox(color)));
+
+      // setup drop targets
       dialogText.innerHTML = `Aus der <span class="drop-target" data-index="0"></span> der Knechtschaft durch <span class="drop-target" data-index="1"></span> Schlachten ans <span class="drop-target" data-index="2"></span> Licht der Freiheit.`;
       document.querySelectorAll('.drop-target').forEach(target => {
+        target.draggable = true;
+        target.addEventListener('dragstart', e => {
+          if (!target.dataset.filled) { e.preventDefault(); return; }
+          dragData = { color: target.dataset.filled, from: 'target', index: target.dataset.index };
+          // clear slot
+          target.textContent = '';
+          delete target.dataset.filled;
+          target.style.color = '';
+        });
         target.addEventListener('dragover', e => e.preventDefault());
         target.addEventListener('drop', e => {
-          const idx = target.dataset.index;
-          if (dragData) {
-            target.textContent = words[dragData];
-            target.style.color = dragData;
-            target.dataset.filled = dragData;
-            checkAllFilled();
+          e.preventDefault();
+          const prevColor = target.dataset.filled;
+          // if swapping existing
+          if (prevColor) {
+            // return old to boxContainer
+            boxContainer.appendChild(createBox(prevColor));
           }
+          // place new
+          const { color, from, index } = dragData;
+          target.textContent = words[color];
+          target.style.color = color;
+          target.dataset.filled = color;
+          // remove from original if from box
+          if (from === 'box') {
+            const original = boxContainer.querySelector(`.draggable-box[data-color='${color}']`);
+            if (original) original.remove();
+          }
+          // no need to handle from target
+          checkAllFilled();
+          dragData = null;
         });
       });
     }
 
     function checkAllFilled() {
       const targets = Array.from(document.querySelectorAll('.drop-target'));
-      const filled = targets.every(t => t.dataset.filled);
-      if (filled) {
+      if (targets.every(t => t.dataset.filled)) {
         openBtn.style.display = 'inline-block';
+      } else {
+        openBtn.style.display = 'none';
       }
     }
 
-    // Handle Open button
     openBtn.addEventListener('click', () => {
       feedback.textContent = '';
-      const targets = Array.from(document.querySelectorAll('.drop-target'));
-      const order = targets.map(t => t.dataset.filled);
+      const order = Array.from(document.querySelectorAll('.drop-target')).map(t => t.dataset.filled);
       if (order.join() !== correctOrder.join()) {
         feedback.textContent = 'ЧТО-ТО НЕ ТО!';
         return;
       }
-      // Correct!
       document.getElementById('wizard-img').src = 'chest_opened.png';
       dialogText.innerHTML = 'ПОЗДРАВЛЯЕМ С ДНЕМ РОЖДЕНИЯ! ВОТ ТУТ ТВОИ ПОДАРКИ!<br/><a href="#">[Google Drive Link]</a>';
       boxContainer.innerHTML = '';
       openBtn.style.display = 'none';
     });
 
-    // Update position
+    // Movement & rendering
     function updatePos() {
       player.style.left = posX + 'px';
       player.style.bottom = (80 + posY) + 'px';
     }
-
-    // Show prompt
     function checkProximity() {
       const wizardX = (gameArea.clientWidth - playerWidth)/2;
       prompt.style.display = (!inDialog && Math.abs(posX - wizardX) < playerWidth*0.6) ? 'block' : 'none';
     }
-
-    // Game loop
     function gameLoop() {
       if (!inDialog) {
-        if (keys['arrowleft'] || keys['a']) { posX = Math.max(leftLimit, posX - 4); player.classList.add('flipped'); }
-        if (keys['arrowright'] || keys['d']){ posX = Math.min(rightLimit, posX + 4); player.classList.remove('flipped'); }
-        if ((keys[' '] || keys['arrowup'] || keys['w']) && !isJumping) { isJumping = true; jumpSpeed = 15; }
+        if (keys['arrowleft']||keys['a']){ posX = Math.max(leftLimit,posX-4); player.classList.add('flipped'); }
+        if (keys['arrowright']||keys['d']){ posX = Math.min(rightLimit,posX+4); player.classList.remove('flipped'); }
+        if ((keys[' ']||keys['arrowup']||keys['w'])&&!isJumping){ isJumping=true;jumpSpeed=15; }
       }
-      if (isJumping) {
-        posY += jumpSpeed;
-        jumpSpeed -= gravity;
-        if (posY <= 0) { posY = 0; isJumping = false; }
-      }
-      updatePos();
-      checkProximity();
-      requestAnimationFrame(gameLoop);
+      if (isJumping) { posY += jumpSpeed; jumpSpeed -= gravity; if(posY<=0){posY=0;isJumping=false;} }
+      updatePos(); checkProximity(); requestAnimationFrame(gameLoop);
     }
-    updatePos();
-    gameLoop();
+    updatePos(); gameLoop();
 
-    // Input
-    document.addEventListener('keydown', e => {
-      keys[e.key.toLowerCase()] = true;
-      if (e.key.toLowerCase() === 'e' && prompt.style.display === 'block') {
-        if (!inDialog) startDialog();
-      }
-    });
-    document.addEventListener('keyup', e => {
-      keys[e.key.toLowerCase()] = false;
-    });
+    document.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; if(e.key.toLowerCase()==='e'&&prompt.style.display==='block'){ if(!inDialog) startDialog(); } });
+    document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
   </script>
 </body>
 </html>
