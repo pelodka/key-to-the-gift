@@ -75,7 +75,7 @@
     <div id="game-container">
       <div id="player"></div>
       <div id="wizard">
-        <img id="wizard-img" src="wizard2.png" alt="Wizard" />
+        <img id="wizard-img" src="wizard3.png" alt="Wizard" />
         <div id="prompt">Press E</div>
       </div>
       <div id="ground"></div>
@@ -223,7 +223,7 @@
       blocksDiv.style.display         = 'none';
       rejectContainer.style.display   = 'none';
       approveContainer.style.display  = 'none';
-      dialogTextPuzzle.textContent = 'Фух! Большое спасибо! Вот еще одна подсказка - GOLDEN.';
+      dialogTextPuzzle.textContent = 'Выручил, как всегда! Вот последняя подсказка - SCHWARZ.';
       
       const proceed = e => {
         if (e.type === 'keydown' && e.key.toLowerCase() === 'e') return;
@@ -244,8 +244,8 @@
       player.style.backgroundSize = 'contain';
       const block = document.createElement('div');
       block.className = 'collect-block';
-      // Changed to golden
-      block.style.background = 'gold';
+      // Changed to black
+      block.style.background = 'black';
       const xPos = (player.offsetLeft + (320 - 60)/2) + 'px';
       block.style.left   = xPos;
       block.style.bottom = (80 + 320 + 10) + 'px';
