@@ -126,7 +126,7 @@
     const rejectArea       = document.getElementById('rejectArea');
     const approveArea      = document.getElementById('approveArea');
 
-     // ←—— **Spawn logic** for entering from wizard01.html
+    // ←—— **Spawn logic** for entering from wizard01.html
     const params    = new URLSearchParams(location.search);
     const exitSide  = params.get('exit'); // 'left' or 'right'
     const spawnSide = (exitSide === 'left') ? 'right' : 'left';
@@ -159,6 +159,7 @@
     let placedCount = 0;
     let interactionFinished = false;
     let waitingBlock = false;
+    let puzzleSolved = false;  // ← track when puzzle is done
 
     // 1) Greeting → Puzzle
     function startDialog() {
@@ -230,6 +231,7 @@
         window.removeEventListener('mousedown', proceed);
         overlayPuzzle.style.display = 'none';
         setupCollectible();
+        puzzleSolved = true;  // ← mark puzzle as solved
       };
       window.addEventListener('keydown', proceed);
       window.addEventListener('mousedown', proceed);
@@ -305,6 +307,16 @@
           overlayPuzzle.style.display = 'block';
           dialogTextPuzzle.textContent = 'Иди же дальше и собери все части ключа!';
           setTimeout(() => overlayPuzzle.style.display = 'none', 2000);
+        }
+      }
+      // ←—— Transition to wizard03.html once puzzle is solved
+      if (puzzleSolved) {
+        const posX = player.offsetLeft;
+        if ((e.key.toLowerCase() === 'arrowleft' || e.key.toLowerCase() === 'a') && posX <= leftLimit) {
+          window.location.href = `wizard03.html?exit=left`;
+        }
+        if ((e.key.toLowerCase() === 'arrowright' || e.key.toLowerCase() === 'd') && posX >= rightLimit) {
+          window.location.href = `wizard03.html?exit=right`;
         }
       }
     });
