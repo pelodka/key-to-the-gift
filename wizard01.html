@@ -56,9 +56,9 @@
     }
     .choice-btn:hover { background: #ddd; }
     /* Collectible block styling (dynamic color) */
-    .collect-block {
+   .collect-block {
       position: absolute;
-      width: 30px; height: 20px;
+      width: 60px; height: 40px;  /* updated size: 60x40px */
       cursor: pointer;
       image-rendering: pixelated;
     }
@@ -129,11 +129,11 @@
     let blockColor     = 'red';   // default collectible block color
 
     /* ---------------- Dialog Data ---------------- */
-    const greeting   = 'Здравствуйте, путник!';
-    const question   = 'Что растёт под землей, но свет любит?';
-    const answers    = ['Грибы','Камни','Рыбы'];
-    const correctIdx = 0;
-    const correctTip = 'Правильно! Грибы не боятся темноты.';
+    const greeting   = 'Привет, Саша! Представляешь, я проснулся сегодня восьмибитным, а в голове вертится вопрос!';
+    const question   = 'Какой стиль одежды ты предпочитаешь?';
+    const answers    = ['Спорт (спортивка, кеды)','Спорт шик (спортивка, туфли)','Business Formal (брюки, пиджак, рубашка, галстук, туфли)','Business Casual (брюки, пиджак, футболка, тапочки)'];
+    const correctIdx = 2;
+    const correctTip = 'Ну конечно! Спасибо! Кстати, я должен даль тебе подсказку - это ROT.';
 
     /* ---------------- Helper: Show Question & Choices ---------------- */
     function showQuestion() {
@@ -190,7 +190,7 @@
       block.className = 'collect-block';
       block.style.background = blockColor;
       // Center above player
-      block.style.left   = (posX + (playerWidth - 30)/2) + 'px';
+      block.style.left   = (posX + (playerWidth - 60)/2)  /* center for 60px width */ + 'px';/2) + 'px';
       block.style.bottom = (80 + posY + playerWidth + 10) + 'px';
       gameArea.appendChild(block);
 
@@ -200,7 +200,7 @@
         block.style.transition = 'all 0.5s ease-out';
         block.style.left = '0px';
         // Move to top: set bottom to (gameArea height - block height)
-        block.style.bottom = (gameArea.clientHeight - 20) + 'px';
+        block.style.bottom = (gameArea.clientHeight - 40)  /* fly to top, adjusted for 40px height */ + 'px';) + 'px';
 
         block.addEventListener('transitionend', () => {
           // Remove block
