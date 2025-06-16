@@ -89,16 +89,17 @@
     const leftLimit   = 0;
     const rightLimit  = gameArea.clientWidth - playerWidth;
 
-    // Spawn logic
+    // Spawn logic (for returning from wizard2)
     const params   = new URLSearchParams(location.search);
     const exitSide = params.get('exit');
-    let spawnSide = (exitSide === 'left') ? 'right' : 'left';
-    let posX = (spawnSide === 'left') ? leftLimit : rightLimit;
-    let posY = 0;
+    let spawnSide  = (exitSide === 'left') ? 'right' : 'left';
+    let posX       = (spawnSide === 'left') ? leftLimit : rightLimit;
+    let posY       = 0;
 
     // State & physics
     let keys = {}, isJumping = false, jumpSpeed = 0, gravity = 0.8;
     let inDialog = false, interactionFinished = false, waitingBlock = false;
+    let puzzleSolved = false;      // ← new flag
     let blockColor = 'red';
 
     // Dialog data
@@ -144,14 +145,13 @@
       }, 0);
     }
 
-    // Handle answer (amended)
+    // Handle answer
     function selectAnswer(i) {
       inDialog = true;
       overlay.style.display = 'block';
       choicesDiv.innerHTML = '';
 
       if (i === correctIdx) {
-        // Correct answer path
         dialogText.textContent = correctTip;
         const onInput = () => {
           cleanup();
@@ -168,7 +168,6 @@
         window.addEventListener('mousedown', onInput);
 
       } else {
-        // Wrong answer: acknowledge and re-show variants
         dialogText.textContent = 'Нее, это не совсем то!';
         const onInput = () => {
           cleanup();
@@ -194,6 +193,7 @@
       block.style.left = (posX + (playerWidth - 60)/2) + 'px';
       block.style.bottom = (80 + posY + playerWidth + 10) + 'px';
       gameArea.appendChild(block);
+
       block.addEventListener('click', () => {
         block.style.transition = 'all 0.5s ease-out';
         block.style.left = '0px';
@@ -201,6 +201,8 @@
         block.addEventListener('transitionend', () => {
           block.remove();
           waitingBlock = false;
+          interactionFinished = true;
+          puzzleSolved = true;      // ← mark puzzle solved
           player.style.background = "url('player_idle.png') center center no-repeat";
           player.style.backgroundSize = 'contain';
         }, { once: true });
@@ -216,15 +218,25 @@
     // Show prompt
     function checkProximity() {
       const wizardX = (gameArea.clientWidth - playerWidth)/2;
-      prompt.style.display = (!inDialog && !waitingBlock && Math.abs(posX - wizardX) < playerWidth*0.6) ? 'block' : 'none';
+      prompt.style.display = (!inDialog && !waitingBlock && Math.abs(posX - wizardX) < playerWidth*0.6)
+                             ? 'block' : 'none';
     }
 
     // Game loop
     function gameLoop() {
       if (!inDialog && !waitingBlock) {
-        if (keys['arrowleft'] || keys['a']) { posX = Math.max(leftLimit, posX - 4); player.classList.add('flipped'); }
-        if (keys['arrowright'] || keys['d']){ posX = Math.min(rightLimit, posX + 4); player.classList.remove('flipped'); }
-        if ((keys[' '] || keys['arrowup'] || keys['w']) && !isJumping) { isJumping = true; jumpSpeed = 15; }
+        if (keys['arrowleft'] || keys['a']) {
+          posX = Math.max(leftLimit, posX - 4);
+          player.classList.add('flipped');
+        }
+        if (keys['arrowright'] || keys['d']) {
+          posX = Math.min(rightLimit, posX + 4);
+          player.classList.remove('flipped');
+        }
+        if ((keys[' '] || keys['arrowup'] || keys['w']) && !isJumping) {
+          isJumping = true;
+          jumpSpeed = 15;
+        }
       }
       if (isJumping) {
         posY += jumpSpeed;
@@ -243,8 +255,11 @@
 
     // Input
     document.addEventListener('keydown', e => {
-      keys[e.key.toLowerCase()] = true;
-      if (e.key.toLowerCase() === 'e' && prompt.style.display === 'block') {
+      const key = e.key.toLowerCase();
+      keys[key] = true;
+
+      // Interact with wizard/prompt
+      if (key === 'e' && prompt.style.display === 'block') {
         if (!interactionFinished) {
           startDialog();
         } else if (!waitingBlock) {
@@ -254,7 +269,18 @@
           setTimeout(() => { overlay.style.display = 'none'; }, 2000);
         }
       }
+
+      // After puzzle solved, leaving screen triggers transition
+      if (puzzleSolved) {
+        if ((key === 'arrowleft' || key === 'a') && posX <= leftLimit) {
+          window.location.href = `wizard2.html?exit=left`;
+        }
+        if ((key === 'arrowright' || key === 'd') && posX >= rightLimit) {
+          window.location.href = `wizard2.html?exit=right`;
+        }
+      }
     });
+
     document.addEventListener('keyup', e => {
       keys[e.key.toLowerCase()] = false;
     });
