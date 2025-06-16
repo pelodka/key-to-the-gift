@@ -5,52 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Wizard 1 Encounter</title>
   <style>
-    /* Base reset */
-    html, body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: black; font-family: 'Courier New', monospace; }
-    /* Wrapper scaling */
-    #wrapper { position: absolute; top: 0; left: 0; width: 1920px; height: 1200px; transform-origin: top left; }
-    /* Background */
-    #game-container { position: relative; width: 100%; height: 100%; background: url('background.png') center center / cover no-repeat; }
-    /* Player sprite */
-    #player {
-      position: absolute; width: 320px; height: 320px; bottom: 80px; transform-origin: center bottom;
-      background: url('player_idle.png') center center no-repeat;
-      background-size: contain; image-rendering: pixelated;
-      z-index: 1;
-    }
-    #player.flipped { transform: scaleX(-1); }
-    /* Wizard */
-    #wizard { position: absolute; width: 320px; height: 320px; bottom: 80px; left: 50%; transform: translateX(-50%); pointer-events: none; z-index: 1; }
-    #wizard-img { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
-    /* Prompt */
-    #prompt {
-      position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%);
-      background: white; color: black; padding: 8px 12px; border: 4px solid red; border-radius: 4px;
-      font-size: 28px; font-family: 'Arial Black'; text-transform: uppercase;
-      pointer-events: none; display: none; white-space: nowrap; z-index: 2;
-    }
-    /* Dialog overlay */
-    #dialog-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); display:none; z-index: 3; }
-    #dialog-box {
-      position: absolute;
-      top: 50%; left: 50%; transform: translate(-50%,-50%);
-      background: white;
-      padding: 48px;
-      border: 4px solid black;
-      width: 900px;
-      max-width: 95vw;
-      font-family: 'Courier New', monospace;
-      z-index: 4;
-    }
+    html, body { margin:0; padding:0; width:100vw; height:100vh; overflow:hidden; background:black; font-family:'Courier New', monospace; }
+    #wrapper { position:absolute; top:0; left:0; width:1920px; height:1200px; transform-origin:top left; }
+    #game-container { position:relative; width:100%; height:100%; background:url('background.png') center/cover no-repeat; }
+    #player { position:absolute; width:320px; height:320px; bottom:80px; transform-origin:center bottom; background:url('player_idle.png') center/contain no-repeat; image-rendering:pixelated; z-index:2; }
+    #player.flipped { transform:scaleX(-1); }
+    #wizard { position:absolute; width:320px; height:320px; bottom:80px; left:50%; transform:translateX(-50%); z-index:2; pointer-events:none; }
+    #wizard-img { width:100%; height:100%; image-rendering:pixelated; }
+    #prompt { position:absolute; bottom:calc(100%+10px); left:50%; transform:translateX(-50%); background:white; color:black; padding:8px 12px; border:4px solid red; border-radius:4px; font-size:28px; font-family:'Arial Black'; text-transform:uppercase; pointer-events:none; display:none; white-space:nowrap; z-index:3; }
+    #dialog-overlay { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:none; z-index:4; }
+    #dialog-box { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:48px; border:4px solid black; width:900px; max-width:95vw; font-family:'Courier New', monospace; z-index:5; }
     #dialog-name { text-align:center; font-size:28px; font-weight:bold; margin-bottom:16px; }
-    #dialog-text { margin-bottom: 16px; font-size: 28px; color: black; text-align:center; }
-    .blocks-container { display: grid; grid-template-columns: repeat(2,1fr); gap:8px; max-height:400px; overflow-y:auto; margin-bottom:16px; }
+    #dialog-text { font-size:28px; color:black; text-align:center; margin-bottom:16px; }
+    .blocks-container { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; max-height:400px; overflow-y:auto; margin-bottom:16px; }
     .block { padding:12px; background:#eee; border:2px solid #333; cursor:grab; font-size:20px; user-select:none; }
-    .drop-areas { display:flex; justify-content: space-between; }
+    .drop-areas { display:flex; justify-content:space-between; margin-top:16px; }
     .drop-area-container { width:45%; display:none; }
     .drop-area { width:100%; min-height:80px; border:3px dashed #333; font-size:24px; display:flex; align-items:center; justify-content:center; font-weight:bold; }
-    /* Collectible block */
-    .collect-block { position:absolute; width:60px; height:40px; cursor:pointer; image-rendering: pixelated; z-index: 1; }
+    .collect-block { position:absolute; width:60px; height:40px; cursor:pointer; image-rendering:pixelated; z-index:2; }
   </style>
 </head>
 <body>
@@ -79,160 +51,40 @@
       </div>
     </div>
   </div>
-
   <script>
-    // Responsive scaling
-    function updateScale() {
-      const vw = window.innerWidth, vh = window.innerHeight;
-      const scale = Math.min(vw/1920, vh/1200);
-      const wrap = document.getElementById('wrapper');
-      wrap.style.transform = `scale(${scale})`;
-      wrap.style.left = `${(vw - 1920*scale)/2}px`;
-      wrap.style.top  = `${(vh - 1200*scale)/2}px`;
-    }
-    window.addEventListener('resize', updateScale);
-    updateScale();
-
-    // DOM refs
-    const player     = document.getElementById('player');
-    const gameArea   = document.getElementById('game-container');
-    const prompt     = document.getElementById('prompt');
-    const overlay    = document.getElementById('dialog-overlay');
-    const dialogName = document.getElementById('dialog-name');
-    const dialogText = document.getElementById('dialog-text');
-    const blocksDiv  = document.getElementById('blocks');
-    const rejectContainer  = document.getElementById('rejectContainer');
-    const approveContainer = document.getElementById('approveContainer');
-    const rejectArea = document.getElementById('rejectArea');
-    const approveArea= document.getElementById('approveArea');
-
-    // Movement bounds
-    const playerWidth = 320;
-    const leftLimit   = 0;
-    const rightLimit  = gameArea.clientWidth - playerWidth;
-
-    // Flags
-    let goldInteractionDone = false;
-
-    // Spawn logic
-    const params      = new URLSearchParams(location.search);
-    const exitSide    = params.get('exit');
-    let spawnSide     = (exitSide === 'left') ? 'right' : 'left';
-    let posX          = (spawnSide === 'left') ? leftLimit : rightLimit;
-    let posY          = 0;
-
-    // State & physics
-    let keys          = {}, isJumping = false, jumpSpeed = 0, gravity = 0.8;
-    let inDialog      = false, interactionFinished = false, waitingBlock = false;
-
-    // Puzzle data groups
-    const rejectItems = [
+    // Scaling
+    function updateScale(){ const vw=innerWidth, vh=innerHeight, scale=Math.min(vw/1920,vh/1200), w=document.getElementById('wrapper'); w.style.transform=`scale(${scale})`; w.style.left=`${(vw-1920*scale)/2}px`; w.style.top=`${(vh-1200*scale)/2}px`; }
+    window.addEventListener('resize',updateScale); updateScale();
+    // DOM
+    const player=document.getElementById('player'), gameArea=document.getElementById('game-container'), promptEl=document.getElementById('prompt'), overlay=document.getElementById('dialog-overlay'), dialogName=document.getElementById('dialog-name'), dialogText=document.getElementById('dialog-text'), blocksDiv=document.getElementById('blocks'), rejectContainer=document.getElementById('rejectContainer'), approveContainer=document.getElementById('approveContainer'), rejectArea=document.getElementById('rejectArea'), approveArea=document.getElementById('approveArea');
+    // Movement & spawn
+    const playerWidth=320, leftLimit=0, rightLimit=gameArea.clientWidth-playerWidth;
+    const params=new URLSearchParams(location.search), exitSide=params.get('exit'), spawnSide=(exitSide==='left'?'right':'left');
+    let posX=(spawnSide==='left'?leftLimit:rightLimit), posY=0, keys={}, isJumping=false, jumpSpeed=0, gravity=0.8, inDialog=false, interactionFinished=false, waitingBlock=false;
+    // Puzzle data
+    const rejectItems=[
       'Приказ об установлении дресс-кода для всех работников в любое время года - только черный костюм',
       'Приказ об объявлении выговора работникам, не употреблявшим коньяк Арарат на последнем корпоративе',
       'Ձայնագրություն Երևանի աշխատակիցներին շտապաբար վերադարձնելու մասին Պետերբուրգ։',
       'Приказ об окончании ковида в связи со срочным переездом',
       'Приказ об использовании eMM в работе всех департаментов'
     ];
-    const approveItems = [
-      'Правильный приказ 1','Правильный приказ 2','Правильный приказ 3','Правильный приказ 4','Правильный приказ 5'
-    ];
-    const items = [...rejectItems, ...approveItems].sort(() => Math.random() - 0.5);
-    const rejectSet = new Set(rejectItems);
-    const totalCount = items.length;
-    let placedCount = 0;
-
-    // Start puzzle interaction
-    // First, show only the greeting
-    function startDialog() {
-      inDialog = true;
-      dialogName.textContent = '';
-      dialogText.textContent = 'Саша! Хорошо, что ты здесь! В моей папке перепутались все документы! Только ты сможешь разобраться!';
-      overlay.style.display = 'block';
-      // Wait for any key or click to begin the puzzle
-      const proceed = () => {
-        cleanupListeners();
-        showPuzzle();
-      };
-      const cleanupListeners = () => {
-        window.removeEventListener('keydown', proceed);
-        window.removeEventListener('mousedown', proceed);
-      };
-      window.addEventListener('keydown', proceed);
-      window.addEventListener('mousedown', proceed);
+    const approveItems=['Правильный приказ 1','Правильный приказ 2','Правильный приказ 3','Правильный приказ 4','Правильный приказ 5'];
+    const items=[...rejectItems,...approveItems].sort(()=>Math.random()-0.5), rejectSet=new Set(rejectItems), totalCount=items.length; let placedCount=0;
+    // Dialog flow
+    function startDialog(){ inDialog=true; dialogName.textContent=''; dialogText.textContent='Саша! Хорошо, что ты здесь! В моей папке перепутались все документы! Только ты сможешь разобраться!'; overlay.style.display='block';
+      const proceed=()=>{ window.removeEventListener('keydown',proceed); window.removeEventListener('mousedown',proceed); showPuzzle(); };
+      window.addEventListener('keydown',proceed); window.addEventListener('mousedown',proceed);
     }
-
-    // Show the puzzle UI after greeting
-    function showPuzzle() {
-      // Prepare puzzle
-      dialogName.textContent = 'НА ПОДПИСЬ';
-      dialogText.textContent = '';
-      overlay.style.display = 'block';
-      blocksDiv.innerHTML = '';
-      items.forEach((text, i) => {
-        const div = document.createElement('div');
-        div.className = 'block';
-        div.textContent = text;
-        div.draggable = true;
-        div.id = 'block' + i;
-        div.addEventListener('dragstart', e => e.dataTransfer.setData('text/plain', div.id));
-        blocksDiv.appendChild(div);
-      });
-      blocksDiv.style.display = 'grid';
-      rejectContainer.style.display = 'block';
-      approveContainer.style.display = 'block';
-    }
-
-    // Drag & drop logic
-    [rejectArea, approveArea].forEach(area => {
-      area.addEventListener('dragover', e => e.preventDefault());
-      area.addEventListener('drop', e => {
-        e.preventDefault();
-        const id = e.dataTransfer.getData('text/plain');
-        const block = document.getElementById(id);
-        const isReject = (area === rejectArea);
-        const correct = isReject ? rejectSet.has(block.textContent) : !rejectSet.has(block.textContent);
-        if (correct) {
-          block.remove();
-          placedCount++;
-          if (placedCount === totalCount) finishPuzzle();
-        } else {
-          dialogText.textContent = 'Что на это скажет Марк?';
-          setTimeout(() => dialogText.textContent = '', 3000);
-        }
-      });
-    });
-
-    function finishPuzzle() {
-      // Hide puzzle UI
-      dialogName.textContent = '';
-      blocksDiv.style.display = 'none';
-      rejectContainer.style.display = 'none';
-      approveContainer.style.display = 'none';
-      // Show success message and wizard interaction
-      dialogText.textContent = 'Фух! Большое спасибо! Вот еще одна подсказка - GOLDEN.';
-      overlay.style.display = 'block';
-      // Wait for player input to proceed
-      const proceed = () => {
-        cleanupListeners();
-        overlay.style.display = 'none';
-        interactionFinished = true;
-        setupCollectible();
-      };
-      const cleanupListeners = () => {
-        window.removeEventListener('keydown', proceed);
-        window.removeEventListener('mousedown', proceed);
-      };
-      window.addEventListener('keydown', proceed);
-      window.addEventListener('mousedown', proceed);
-    }, 1000);
-    }
-
-    // Collectible setup
+    function showPuzzle(){ dialogName.textContent='НА ПОДПИСЬ'; dialogText.textContent=''; overlay.style.display='block'; blocksDiv.innerHTML=''; items.forEach((t,i)=>{ const d=document.createElement('div'); d.className='block'; d.textContent=t; d.draggable=true; d.id='b'+i; d.addEventListener('dragstart',e=>e.dataTransfer.setData('text/plain',d.id)); blocksDiv.appendChild(d); }); blocksDiv.style.display='grid'; rejectContainer.style.display='block'; approveContainer.style.display='block'; }
+    // Drag-drop
+    [rejectArea,approveArea].forEach(area=>{ area.addEventListener('dragover',e=>e.preventDefault()); area.addEventListener('drop',e=>{ e.preventDefault(); const id=e.dataTransfer.getData('text/plain'), b=document.getElementById(id); const correct=(area===rejectArea?rejectSet.has(b.textContent):!rejectSet.has(b.textContent)); if(correct){ b.remove(); placedCount++; if(placedCount===totalCount) finishPuzzle(); } else { dialogText.textContent='Что на это скажет Марк?'; setTimeout(()=>dialogText.textContent='',3000); } }); });
+    function finishPuzzle(){ dialogName.textContent=''; blocksDiv.style.display='none'; rejectContainer.style.display='none'; approveContainer.style.display='none'; dialogText.textContent='Фух! Большое спасибо! Вот еще одна подсказка - GOLDEN.'; const proceed=()=>{ window.removeEventListener('keydown',proceed); window.removeEventListener('mousedown',proceed); overlay.style.display='none'; interactionFinished=true; setupCollectible(); }; window.addEventListener('keydown',proceed); window.addEventListener('mousedown',proceed); }
+    // Collectible
     function setupCollectible() {
       waitingBlock = true;
-      // Reset inDialog so movement resumes
       inDialog = false;
-      player.style.background = "url('player_hands.png') center center no-repeat";
+      player.style.background = "url('player_hands.png') center/contain no-repeat";
       player.style.backgroundSize = 'contain';
       const loot = document.createElement('div');
       loot.className = 'collect-block';
@@ -246,57 +98,24 @@
         loot.style.bottom = (gameArea.clientHeight - 40) + 'px';
         loot.addEventListener('transitionend', () => {
           loot.remove();
+          // Reset interaction and movement flags
           waitingBlock = false;
           inDialog = false;
-          player.style.background = "url('player_idle.png') center center no-repeat";
+          isJumping = false;
+          interactionFinished = true;
+          // Restore player sprite
+          player.style.background = "url('player_idle.png') center/contain no-repeat";
           player.style.backgroundSize = 'contain';
         }, { once: true });
       });
-    }
-
-    // Game loop
-    function updatePos() {
-      player.style.left = posX + 'px';
-      player.style.bottom = (80 + posY) + 'px';
-    }
-    function checkProximity() {
-      const wizardX = (gameArea.clientWidth - playerWidth) / 2;
-      prompt.style.display = (!inDialog && !waitingBlock && Math.abs(posX - wizardX) < playerWidth*0.6) ? 'block' : 'none';
-    }
-    function gameLoop() {
-      if (!inDialog && !waitingBlock) {
-        if (keys['arrowleft'] || keys['a']) { posX = Math.max(leftLimit, posX - 4); player.classList.add('flipped'); }
-        if (keys['arrowright']|| keys['d']) { posX = Math.min(rightLimit, posX + 4); player.classList.remove('flipped'); }
-        if ((keys[' ']|| keys['arrowup']|| keys['w']) && !isJumping) { isJumping = true; jumpSpeed = 15; }
-      }
-      if (isJumping) {
-        posY += jumpSpeed;
-        jumpSpeed -= gravity;
-        if (posY <= 0) { posY = 0; isJumping = false; }
-      }
-      updatePos();
-      checkProximity();
-      requestAnimationFrame(gameLoop);
-    }
-    updatePos();
+    }px`; loot.style.bottom=`${80+posY+playerWidth+10}px`; gameArea.appendChild(loot);
+      loot.addEventListener('click',()=>{ loot.style.transition='all 0.5s ease-out'; loot.style.left='0px'; loot.style.bottom=`${gameArea.clientHeight-40}px`; loot.addEventListener('transitionend',()=>{ loot.remove(); waitingBlock=false; inDialog=false; // explicitly re-enable movement globals
+          interactionFinished=true; player.style.background="url('player_idle.png') center/contain no-repeat"; player.style.backgroundSize='contain'; }); }); }
+    // Loop
+    function gameLoop(){ if(!inDialog&&!waitingBlock){ if(keys['arrowleft']||keys['a']){ posX=Math.max(leftLimit,posX-4); player.classList.add('flipped'); } if(keys['arrowright']||keys['d']){ posX=Math.min(rightLimit,posX+4); player.classList.remove('flipped'); } if((keys[' ']||keys['arrowup']||keys['w'])&&!isJumping){ isJumping=true; jumpSpeed=15; } } if(isJumping){ posY+=jumpSpeed; jumpSpeed-=gravity; if(posY<=0){ posY=0; isJumping=false; }} player.style.left=`${posX}px`; player.style.bottom=`${80+posY}px`; const wizX=(gameArea.clientWidth-playerWidth)/2; promptEl.style.display=!inDialog&&!waitingBlock&&Math.abs(posX-wizX)<playerWidth*0.6?'block':'none'; requestAnimationFrame(gameLoop); }
     gameLoop();
-
-        // Input
-    document.addEventListener('keydown', e => {
-      keys[e.key.toLowerCase()] = true;
-      if (e.key.toLowerCase() === 'e' && prompt.style.display === 'block' && !inDialog) {
-        if (!interactionFinished) {
-          startDialog();
-        } else if (!waitingBlock) {
-          // Post-collect wizard interaction
-          inDialog = true;
-          overlay.style.display = 'block';
-          dialogName.textContent = '';
-          dialogText.textContent = 'Да! Осталось совсем немного! Подарок уже близко';
-        }
-      }
-    });
-    document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+    // Input
+    document.addEventListener('keydown',e=>{ keys[e.key.toLowerCase()]=true; if(e.key.toLowerCase()==='e'&&promptEl.style.display==='block'&&!inDialog){ if(!interactionFinished) startDialog(); else{ inDialog=true; overlay.style.display='block'; dialogName.textContent=''; dialogText.textContent='Да! Осталось совсем немного! Подарок уже близко'; }} }); document.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
   </script>
 </body>
 </html>
