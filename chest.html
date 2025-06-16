@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wizard Chest Puzzle</title>
+  <style>
+    /* Base reset */
+    html, body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: black; font-family: 'Courier New', monospace; }
+    /* Wrapper scaling */
+    #wrapper { position: absolute; top: 0; left: 0; width: 1920px; height: 1200px; transform-origin: top left; }
+    /* Background */
+    #game-container { position: relative; width: 100%; height: 100%; background: url('background.png') center center / cover no-repeat; }
+    /* Player sprite */
+    #player {
+      position: absolute; width: 320px; height: 320px; bottom: 80px; transform-origin: center bottom;
+      background: url('player_idle.png') center center no-repeat;
+      background-size: contain; image-rendering: pixelated;
+    }
+    #player.flipped { transform: scaleX(-1); }
+    /* Wizard / Chest sprite */
+    #wizard { position: absolute; width: 320px; height: 320px; bottom: 80px; left: 50%; transform: translateX(-50%); pointer-events: none; }
+    #wizard-img { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+    /* Prompt */
+    #prompt {
+      position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%);
+      background: white; color: black; padding: 8px 12px; border: 4px solid red; border-radius: 4px;
+      font-size: 28px; font-family: 'Arial Black'; text-transform: uppercase;
+      pointer-events: none; display: none; white-space: nowrap;
+    }
+    /* Dialog overlay */
+    #dialog-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); display:none; }
+    #dialog-box {
+      position: absolute; top:50%; left:50%; transform: translate(-50%,-50%);
+      background: white; padding: 24px; border: 4px solid black; width: 800px; max-width: 90vw;
+      font-family: 'Courier New', monospace; text-align: center;
+    }
+    #dialog-text { margin-bottom: 16px; font-size: 28px; color: black; }
+    /* Puzzle styling */
+    .draggable-box {
+      width: 60px; height: 40px; margin: 0 10px; cursor: grab;
+    }
+    .drop-target {
+      display: inline-block; width: 120px; border-bottom: 2px solid #333; margin: 0 5px; vertical-align: middle; min-height: 36px;
+    }
+    #box-container { margin-bottom: 20px; }
+    #open-btn {
+      display: inline-block; margin-top: 20px; padding: 10px 20px; background: #eee; border: 2px solid #333;
+      font-size: 24px; cursor: pointer;
+    }
+    #feedback { margin-top: 12px; font-size: 24px; color: red; height: 30px; }
+  </style>
+</head>
+<body>
+  <div id="wrapper">
+    <div id="game-container">
+      <div id="player"></div>
+      <div id="wizard">
+        <img id="wizard-img" src="chest_closed.png" alt="Chest" />
+        <div id="prompt">Press E</div>
+      </div>
+      <div id="ground"></div>
+      <div id="dialog-overlay">
+        <div id="dialog-box">
+          <p id="dialog-text"></p>
+          <div id="box-container"></div>
+          <button id="open-btn">ОТКРЫТЬ</button>
+          <div id="feedback"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Responsive scaling
+    function updateScale() {
+      const vw = window.innerWidth, vh = window.innerHeight;
+      const scale = Math.min(vw/1920, vh/1200);
+      const wrap = document.getElementById('wrapper');
+      wrap.style.transform = `scale(${scale})`;
+      wrap.style.left = `${(vw - 1920*scale)/2}px`;
+      wrap.style.top  = `${(vh - 1200*scale)/2}px`;
+    }
+    window.addEventListener('resize', updateScale);
+    updateScale();
+
+    // DOM refs
+    const player     = document.getElementById('player');
+    const gameArea   = document.getElementById('game-container');
+    const prompt     = document.getElementById('prompt');
+    const overlay    = document.getElementById('dialog-overlay');
+    const dialogText = document.getElementById('dialog-text');
+    const boxContainer = document.getElementById('box-container');
+    const openBtn    = document.getElementById('open-btn');
+    const feedback   = document.getElementById('feedback');
+
+    // Movement bounds
+    const playerWidth = 320;
+    const leftLimit   = 0;
+    const rightLimit  = gameArea.clientWidth - playerWidth;
+
+    // Spawn logic
+    const params   = new URLSearchParams(location.search);
+    const exitSide = params.get('exit');
+    let spawnSide = (exitSide === 'left') ? 'right' : 'left';
+    let posX = (spawnSide === 'left') ? leftLimit : rightLimit;
+    let posY = 0;
+
+    // State
+    let keys = {}, isJumping = false, jumpSpeed = 0, gravity = 0.8;
+    let inDialog = false, puzzleActive = false;
+    let dragData = null;
+
+    // Show initial greeting then puzzle
+    const greeting = 'А вот и последняя загадка! Подарки уже совсем рядом!';
+    function startDialog() {
+      inDialog = true;
+      overlay.style.display = 'block';
+      dialogText.textContent = greeting;
+      boxContainer.innerHTML = '';
+      openBtn.style.display = 'none';
+      feedback.textContent = '';
+      setTimeout(() => {
+        dialogText.textContent = 'Aus der _________ der Knechtschaft durch _________ Schlachten ans _________ Licht der Freiheit.';
+        setupPuzzle();
+      }, 1000);
+    }
+
+    // Set up puzzle elements
+    const colors = ['black','red','gold'];
+    const words = { black: 'SWARTZ', red: 'BLUTEGE', gold: 'GOLDENE' };
+    const correctOrder = ['black','red','gold'];
+
+    function setupPuzzle() {
+      boxContainer.innerHTML = '';
+      // Create draggable boxes
+      colors.forEach(color => {
+        const box = document.createElement('div');
+        box.className = 'draggable-box';
+        box.draggable = true;
+        box.style.background = color;
+        box.dataset.color = color;
+        box.addEventListener('dragstart', e => {
+          dragData = color;
+        });
+        boxContainer.appendChild(box);
+      });
+      // Create drop targets in dialog text
+      dialogText.innerHTML = `Aus der <span class="drop-target" data-index="0"></span> der Knechtschaft durch <span class="drop-target" data-index="1"></span> Schlachten ans <span class="drop-target" data-index="2"></span> Licht der Freiheit.`;
+      document.querySelectorAll('.drop-target').forEach(target => {
+        target.addEventListener('dragover', e => e.preventDefault());
+        target.addEventListener('drop', e => {
+          const idx = target.dataset.index;
+          if (dragData) {
+            target.textContent = words[dragData];
+            target.style.color = dragData;
+            target.dataset.filled = dragData;
+            checkAllFilled();
+          }
+        });
+      });
+    }
+
+    function checkAllFilled() {
+      const targets = Array.from(document.querySelectorAll('.drop-target'));
+      const filled = targets.every(t => t.dataset.filled);
+      if (filled) {
+        openBtn.style.display = 'inline-block';
+      }
+    }
+
+    // Handle Open button
+    openBtn.addEventListener('click', () => {
+      feedback.textContent = '';
+      const targets = Array.from(document.querySelectorAll('.drop-target'));
+      const order = targets.map(t => t.dataset.filled);
+      if (order.join() !== correctOrder.join()) {
+        feedback.textContent = 'ЧТО-ТО НЕ ТО!';
+        return;
+      }
+      // Correct!
+      document.getElementById('wizard-img').src = 'chest_opened.png';
+      dialogText.innerHTML = 'ПОЗДРАВЛЯЕМ С ДНЕМ РОЖДЕНИЯ! ВОТ ТУТ ТВОИ ПОДАРКИ!<br/><a href="#">[Google Drive Link]</a>';
+      boxContainer.innerHTML = '';
+      openBtn.style.display = 'none';
+    });
+
+    // Update position
+    function updatePos() {
+      player.style.left = posX + 'px';
+      player.style.bottom = (80 + posY) + 'px';
+    }
+
+    // Show prompt
+    function checkProximity() {
+      const wizardX = (gameArea.clientWidth - playerWidth)/2;
+      prompt.style.display = (!inDialog && Math.abs(posX - wizardX) < playerWidth*0.6) ? 'block' : 'none';
+    }
+
+    // Game loop
+    function gameLoop() {
+      if (!inDialog) {
+        if (keys['arrowleft'] || keys['a']) { posX = Math.max(leftLimit, posX - 4); player.classList.add('flipped'); }
+        if (keys['arrowright'] || keys['d']){ posX = Math.min(rightLimit, posX + 4); player.classList.remove('flipped'); }
+        if ((keys[' '] || keys['arrowup'] || keys['w']) && !isJumping) { isJumping = true; jumpSpeed = 15; }
+      }
+      if (isJumping) {
+        posY += jumpSpeed;
+        jumpSpeed -= gravity;
+        if (posY <= 0) { posY = 0; isJumping = false; }
+      }
+      updatePos();
+      checkProximity();
+      requestAnimationFrame(gameLoop);
+    }
+    updatePos();
+    gameLoop();
+
+    // Input
+    document.addEventListener('keydown', e => {
+      keys[e.key.toLowerCase()] = true;
+      if (e.key.toLowerCase() === 'e' && prompt.style.display === 'block') {
+        if (!inDialog) startDialog();
+      }
+    });
+    document.addEventListener('keyup', e => {
+      keys[e.key.toLowerCase()] = false;
+    });
+  </script>
+</body>
+</html>
