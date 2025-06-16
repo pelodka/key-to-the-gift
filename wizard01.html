@@ -15,19 +15,14 @@
     #player { position: absolute; width: 320px; height: 320px; bottom: 80px; transform-origin: center bottom;
                background: url('player_idle.png') center center no-repeat; background-size: contain; image-rendering: pixelated; }
     #player.flipped { transform: scaleX(-1); }
-    /* Wizard sprite:
-       Ensure that wizard1.png is exported as a true transparent PNG (no baked-in checkerboard).
-       CSS will respect transparency via background-color: transparent. */
-    #wizard {
-      position: absolute; width: 320px; height: 320px; bottom: 80px;
-      left: 50%; transform: translateX(-50%);
-      /* Transparent background behind the image */
-      background-color: transparent;
-      /* Sprite image (transparent PNG) */
-      background: url('wizard1.png') center center no-repeat;
-      background-size: contain;
-      image-rendering: pixelated;
+    /* Wizard container */
+    #wizard { position: absolute; width: 320px; height: 320px; bottom: 80px;
+               left: 50%; transform: translateX(-50%);
+               /* No background here; we'll use an <img> for transparency */
+               pointer-events: none;
     }
+    /* Wizard image: true PNG transparency preserved */
+    #wizard-img { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
     /* Ground collision area */
     #ground { position: absolute; bottom: 0; left: 0; width: 100%; height: 100px; }
     /* Speech prompt above wizard */
@@ -51,6 +46,8 @@
     <div id="game-container">
       <div id="player"></div>
       <div id="wizard">
+        <!-- Use an <img> so true PNG transparency shows the scene background -->
+        <img id="wizard-img" src="wizard1.png" alt="Wizard" />
         <div id="prompt">Press E</div>
       </div>
       <div id="ground"></div>
@@ -92,7 +89,7 @@
     let spawn;
     if (exitSide === 'left') spawn = 'right';
     else if (exitSide === 'right') spawn = 'left';
-    else spawn = 'left'; // default
+    else spawn = 'right'; // default to right if no param
 
     // Movement bounds based on container size
     const container   = document.getElementById('game-container');
@@ -209,7 +206,6 @@
     function checkTransition() {
       if (!interactionFinished) return;
       if (posX <= leftLimit || posX >= rightLimit) {
-        // preserve spawn param for next scene if needed
         window.location.href = 'wizard02.html?spawn=' + (posX <= leftLimit ? 'left' : 'right');
       }
     }
