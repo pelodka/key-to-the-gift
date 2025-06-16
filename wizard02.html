@@ -111,6 +111,9 @@
     const leftLimit   = 0;
     const rightLimit  = gameArea.clientWidth - playerWidth;
 
+    // Flags
+    let goldInteractionDone = false;
+
     // Spawn logic
     const params      = new URLSearchParams(location.search);
     const exitSide    = params.get('exit');
@@ -139,13 +142,33 @@
     let placedCount = 0;
 
     // Start puzzle interaction
+    // First, show only the greeting
     function startDialog() {
       inDialog = true;
-      dialogName.textContent = 'НА ПОДПИСЬ';
+      dialogName.textContent = '';
       dialogText.textContent = 'Саша! Хорошо, что ты здесь! В моей папке перепутались все документы! Только ты сможешь разобраться!';
       overlay.style.display = 'block';
+      // Wait for any key or click to begin the puzzle
+      const proceed = () => {
+        cleanupListeners();
+        showPuzzle();
+      };
+      const cleanupListeners = () => {
+        window.removeEventListener('keydown', proceed);
+        window.removeEventListener('mousedown', proceed);
+      };
+      window.addEventListener('keydown', proceed);
+      window.addEventListener('mousedown', proceed);
+    }
+
+    // Show the puzzle UI after greeting
+    function showPuzzle() {
+      // Prepare puzzle
+      dialogName.textContent = 'НА ПОДПИСЬ';
+      dialogText.textContent = '';
+      overlay.style.display = 'block';
       blocksDiv.innerHTML = '';
-      items.forEach((text,i) => {
+      items.forEach((text, i) => {
         const div = document.createElement('div');
         div.className = 'block';
         div.textContent = text;
@@ -180,12 +203,28 @@
     });
 
     function finishPuzzle() {
+      // Hide puzzle UI
       dialogName.textContent = '';
       blocksDiv.style.display = 'none';
       rejectContainer.style.display = 'none';
       approveContainer.style.display = 'none';
+      // Show success message and wizard interaction
       dialogText.textContent = 'Фух! Большое спасибо! Вот еще одна подсказка - GOLDEN.';
-      setTimeout(() => { overlay.style.display = 'none'; interactionFinished = true; setupCollectible(); }, 1000);
+      overlay.style.display = 'block';
+      // Wait for player input to proceed
+      const proceed = () => {
+        cleanupListeners();
+        overlay.style.display = 'none';
+        interactionFinished = true;
+        setupCollectible();
+      };
+      const cleanupListeners = () => {
+        window.removeEventListener('keydown', proceed);
+        window.removeEventListener('mousedown', proceed);
+      };
+      window.addEventListener('keydown', proceed);
+      window.addEventListener('mousedown', proceed);
+    }, 1000);
     }
 
     // Collectible setup
@@ -242,11 +281,19 @@
     updatePos();
     gameLoop();
 
-    // Input
+        // Input
     document.addEventListener('keydown', e => {
       keys[e.key.toLowerCase()] = true;
       if (e.key.toLowerCase() === 'e' && prompt.style.display === 'block' && !inDialog) {
-        startDialog();
+        if (!interactionFinished) {
+          startDialog();
+        } else if (!waitingBlock) {
+          // Post-collect wizard interaction
+          inDialog = true;
+          overlay.style.display = 'block';
+          dialogName.textContent = '';
+          dialogText.textContent = 'Да! Осталось совсем немного! Подарок уже близко';
+        }
       }
     });
     document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
