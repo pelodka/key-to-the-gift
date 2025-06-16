@@ -18,7 +18,6 @@
     /* Wizard container */
     #wizard { position: absolute; width: 320px; height: 320px; bottom: 80px;
                left: 50%; transform: translateX(-50%);
-               /* No background here; we'll use an <img> for transparency */
                pointer-events: none;
     }
     /* Wizard image: true PNG transparency preserved */
@@ -46,7 +45,6 @@
     <div id="game-container">
       <div id="player"></div>
       <div id="wizard">
-        <!-- Use an <img> so true PNG transparency shows the scene background -->
         <img id="wizard-img" src="wizard1.png" alt="Wizard" />
         <div id="prompt">Press E</div>
       </div>
@@ -61,7 +59,7 @@
   </div>
 
   <script>
-    // Responsive scaling for different viewports
+    // Responsive scaling
     function updateScale() {
       const vw = window.innerWidth, vh = window.innerHeight;
       const s = Math.min(vw/1920, vh/1200);
@@ -73,7 +71,7 @@
     window.addEventListener('resize', updateScale);
     updateScale();
 
-    // DOM elements
+    // DOM refs
     const player     = document.getElementById('player');
     const wizard     = document.getElementById('wizard');
     const prompt     = document.getElementById('prompt');
@@ -81,27 +79,26 @@
     const dialogText = document.getElementById('dialog-text');
     const choicesDiv = document.getElementById('choices');
 
-    // URL param for exit side from previous scene:
-    // 'left' means player exited left, so we spawn them on the right, and vice versa.
+    // === Spawn Logic ===
+    // Read the exit side from screen2 via URL param 'exit'
     const params   = new URLSearchParams(location.search);
-    const exitSide = params.get('spawn');
-    // invert side: exit left -> spawn right, exit right -> spawn left
-    let spawn;
-    if (exitSide === 'left') spawn = 'right';
-    else if (exitSide === 'right') spawn = 'left';
-    else spawn = 'right'; // default to right if no param
+    const exitSide = params.get('exit'); // now reading 'exit' instead of 'spawn'
+    let spawnSide;
+    if (exitSide === 'left')      spawnSide = 'right';
+    else if (exitSide === 'right') spawnSide = 'left';
+    else                           spawnSide = 'left'; // default to left if no param
 
-    // Movement bounds based on container size
+    // Movement bounds
     const container   = document.getElementById('game-container');
     const playerWidth = 320;
     const leftLimit   = 0;
     const rightLimit  = container.clientWidth - playerWidth;
 
-    // Initial player position based on spawn
-    let posX = spawn === 'right' ? rightLimit : leftLimit;
+    // Set initial posX based on spawnSide
+    let posX = spawnSide === 'left' ? leftLimit : rightLimit;
     let posY = 0;
 
-    // Wizard is centered
+    // Wizard center X
     const wizardX = (container.clientWidth - playerWidth) / 2;
 
     // Input tracking
@@ -113,23 +110,17 @@
     let isJumping = false;
     let jumpSpeed = 0;
     const gravity = 0.8;
+    // State
+    let inDialog = false, interactionFinished = false;
 
-    // State flags
-    let inDialog = false;
-    let interactionFinished = false;
+    // Dialog data
+    const greeting     = 'Здравствуйте, путник!';
+    const question     = 'Что растёт под землей, но свет любит?';
+    const answers      = ['Грибы','Камни','Рыбы'];
+    const correctIndex = 0;
+    const correctTip   = 'Правильно! Грибы не боятся темноты.';
 
-    // --- Dialog Data ---
-    const greeting      = 'Здравствуйте, путник!';
-    const question      = 'Что растёт под землей, но свет любит?';
-    const answers       = ['Грибы', 'Камни', 'Рыбы'];
-    const correctIndex  = 0;  // index of correct answer in `answers`
-    const correctTip    = 'Правильно! Грибы не боятся темноты.';
-
-    /**
-     * showQuestion()
-     * Populates dialogText with `question` and
-     * creates choice buttons for each answer.
-     */
+    // Show question and buttons
     function showQuestion() {
       dialogText.textContent = question;
       choicesDiv.innerHTML = '';
@@ -142,11 +133,7 @@
       });
     }
 
-    /**
-     * startDialog()
-     * Triggers the dialog overlay, shows a greeting,
-     * then after a delay, displays the question and choices.
-     */
+    // Start dialog
     function startDialog() {
       inDialog = true;
       overlay.style.display = 'block';
@@ -155,105 +142,54 @@
       setTimeout(() => showQuestion(), 1000);
     }
 
-    /**
-     * selectAnswer(i)
-     * Called when the player clicks an answer button.
-     * If incorrect: show error message then re-show question.
-     * If correct: show tip, mark interactionFinished, and close dialog.
-     */
+    // Handle answer
     function selectAnswer(i) {
       if (i === correctIndex) {
-        // Correct answer flow
         dialogText.textContent = correctTip;
         interactionFinished = true;
-        // Close dialog after showing tip
-        setTimeout(() => {
-          overlay.style.display = 'none';
-          inDialog = false;
-        }, 1500);
+        setTimeout(() => { overlay.style.display = 'none'; inDialog = false; }, 1500);
       } else {
-        // Incorrect answer flow: show error then retry
         dialogText.textContent = 'Неправильно, попробуйте ещё.';
         choicesDiv.innerHTML = '';
         setTimeout(() => showQuestion(), 1000);
       }
     }
 
-    /**
-     * updatePos()
-     * Applies posX/posY to the player's CSS for rendering.
-     */
+    // Update position
     function updatePos() {
-      player.style.left   = posX + 'px';
+      player.style.left = posX + 'px';
       player.style.bottom = (80 + posY) + 'px';
     }
 
-    /**
-     * checkProximity()
-     * Shows the "Press E" prompt if the player is
-     * within range of the wizard and not in dialog.
-     */
+    // Proximity prompt
     function checkProximity() {
-      const dx = Math.abs(posX - wizardX);
-      prompt.style.display = (dx < playerWidth * 0.6 && !inDialog) ? 'block' : 'none';
+      prompt.style.display = (!inDialog && Math.abs(posX - wizardX) < playerWidth*0.6) ? 'block' : 'none';
     }
 
-    /**
-     * checkTransition()
-     * Once the dialog interaction is finished, enables
-     * transition to wizard02.html by walking off either edge.
-     */
+    // Transition once done
     function checkTransition() {
       if (!interactionFinished) return;
       if (posX <= leftLimit || posX >= rightLimit) {
-        window.location.href = 'wizard02.html?spawn=' + (posX <= leftLimit ? 'left' : 'right');
+        window.location.href = 'wizard02.html?exit=' + (posX <= leftLimit ? 'left' : 'right');
       }
     }
 
-    /**
-     * gameLoop()
-     * Main loop: handles input, movement, jump physics,
-     * proximity prompt, and scene transition.
-     */
+    // Main loop
     function gameLoop() {
       if (!inDialog) {
-        // Horizontal movement
-        if (keys['arrowleft'] || keys['a']) {
-          posX = Math.max(leftLimit, posX - 4);
-          player.classList.add('flipped');
-        }
-        if (keys['arrowright'] || keys['d']) {
-          posX = Math.min(rightLimit, posX + 4);
-          player.classList.remove('flipped');
-        }
-        // Jump: space, up-arrow, or W
-        if ((keys[' '] || keys['spacebar'] || keys['arrowup'] || keys['w']) && !isJumping) {
-          isJumping = true;
-          jumpSpeed = 15;
-        }
+        if (keys['arrowleft'] || keys['a']) { posX = Math.max(leftLimit, posX - 4); player.classList.add('flipped'); }
+        if (keys['arrowright']|| keys['d']) { posX = Math.min(rightLimit, posX + 4); player.classList.remove('flipped'); }
+        if ((keys[' ']||keys['arrowup']||keys['w']) && !isJumping) { isJumping = true; jumpSpeed = 15; }
       }
-      // Jump physics
-      if (isJumping) {
-        posY += jumpSpeed;
-        jumpSpeed -= gravity;
-        if (posY <= 0) { posY = 0; isJumping = false; }
-      }
-
-      updatePos();
-      checkProximity();
-      checkTransition();
+      if (isJumping) { posY += jumpSpeed; jumpSpeed -= gravity; if (posY <= 0) { posY = 0; isJumping = false; } }
+      updatePos(); checkProximity(); checkTransition();
       requestAnimationFrame(gameLoop);
     }
+    updatePos(); gameLoop();
 
-    // Kick off the loop
-    updatePos();
-    gameLoop();
-
-    // Trigger dialog on 'E' press when prompt is shown
+    // Trigger dialog
     document.addEventListener('keydown', e => {
-      if (!inDialog && e.key.toLowerCase() === 'e' && prompt.style.display === 'block') {
-        startDialog();
-      }
+      if (!inDialog && e.key.toLowerCase() === 'e' && prompt.style.display === 'block') startDialog();
     });
   </script>
 </body>
