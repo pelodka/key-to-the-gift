@@ -13,7 +13,7 @@
     #game-container { position: relative; width: 100%; height: 100%; background: url('background.png') center center / cover no-repeat; }
     /* Player sprite */
     #player {
-      position: absolute; width: 320px; height: 320px; bottom: 80px; transform-origin: center bottom;
+      position: absolute; width: 320px; height: 320px; transform-origin: center bottom;
       background: url('player_idle.png') center center no-repeat;
       background-size: contain; image-rendering: pixelated;
     }
@@ -126,6 +126,9 @@
     const rejectArea         = document.getElementById('rejectArea');
     const approveArea        = document.getElementById('approveArea');
 
+    // start on the ground
+    player.style.bottom = '80px';
+
     // Puzzle data
     const rejectItems = [
       'Приказ об установлении дресс-кода для всех работников в любое время года - только черный костюм',
@@ -220,7 +223,7 @@
     }
 
     // Collectible spawn
-    function setupCollectible() {
+    function setupCollectible() { /* unchanged */ 
       waitingBlock = true;
       player.style.background = "url('player_hands.png') center center no-repeat";
       player.style.backgroundSize = 'contain';
@@ -266,11 +269,13 @@
         }
       }
       if (isJumping) {
-        const bottom = parseFloat(player.style.bottom) || 0;
-        player.style.bottom = bottom + jumpSpeed + 'px';
+        let bottom = parseFloat(player.style.bottom);
+        bottom += jumpSpeed;
+        player.style.bottom = bottom + 'px';
         jumpSpeed -= gravity;
-        if (bottom + jumpSpeed <= 0) {
-          player.style.bottom = '0px';
+        // land at 80px
+        if (bottom <= 80) {
+          player.style.bottom = '80px';
           isJumping = false;
         }
       }
