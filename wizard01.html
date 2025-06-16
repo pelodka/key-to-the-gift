@@ -17,7 +17,6 @@
       width: 320px; height: 320px;
       bottom: 80px;
       transform-origin: center bottom;
-      /* default idle image */
       background: url('player_idle.png') center center no-repeat;
       background-size: contain;
       image-rendering: pixelated;
@@ -31,8 +30,6 @@
     }
     /* Transparent wizard sprite */
     #wizard-img { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
-    /* Ground collision area */
-    #ground { position: absolute; bottom: 0; left: 0; width: 100%; height: 100px; }
     /* Prompt above wizard */
     #prompt {
       position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%);
@@ -42,7 +39,7 @@
       font-family: 'Arial Black'; text-transform: uppercase;
       pointer-events: none; display: none; white-space: nowrap;
     }
-    /* Dialog overlay styling */
+    /* Dialog overlay */
     #dialog-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); display:none; }
     #dialog-box {
       position: absolute; top:50%; left:50%; transform: translate(-50%,-50%);
@@ -50,17 +47,16 @@
       width: 600px; max-width: 80vw;
       font-family: 'Courier New', monospace;
     }
-    /* Enlarged dialog text */
     #dialog-text { margin-bottom: 16px; font-size: 28px; color: black; }
     .choice-btn {
       display: block; margin: 8px 0; padding: 12px 16px;
-      background: #eee; border: 2px solid #333; cursor: pointer; font-size: 22px; /* larger buttons */
+      background: #eee; border: 2px solid #333; cursor: pointer; font-size: 22px;
     }
     .choice-btn:hover { background: #ddd; }
-    /* Collectible block styling (dynamic color) */
+    /* Collectible block styling */
     .collect-block {
       position: absolute;
-      width: 60px; height: 40px;  /* doubled size */
+      width: 60px; height: 40px;
       cursor: pointer;
       image-rendering: pixelated;
     }
@@ -85,7 +81,7 @@
   </div>
 
   <script>
-    /* ---------------- Responsive Scaling ---------------- */
+    // ---------------- Responsive Scaling ----------------
     function updateScale() {
       const vw = window.innerWidth, vh = window.innerHeight;
       const s = Math.min(vw/1920, vh/1200);
@@ -97,7 +93,7 @@
     window.addEventListener('resize', updateScale);
     updateScale();
 
-    /* ---------------- DOM References ---------------- */
+    // ---------------- DOM References ----------------
     const player     = document.getElementById('player');
     const gameArea   = document.getElementById('game-container');
     const prompt     = document.getElementById('prompt');
@@ -105,7 +101,13 @@
     const dialogText = document.getElementById('dialog-text');
     const choicesDiv = document.getElementById('choices');
 
-    /* ---------------- Spawn Logic (invert exit side) ---------------- */
+    // ---------------- Movement Bounds ----------------
+    const playerWidth = 320;
+    const leftLimit   = 0;
+    const rightLimit  = gameArea.clientWidth - playerWidth;
+
+    // ---------------- Spawn Logic ----------------
+    // Read exit side from scene2 & invert for spawn
     const params   = new URLSearchParams(window.location.search);
     const exitSide = params.get('exit');
     let spawnSide;
@@ -113,31 +115,27 @@
     else if (exitSide === 'right') spawnSide = 'left';
     else                           spawnSide = 'left'; // default
 
-    /* ---------------- Movement Bounds ---------------- */
-    const playerWidth  = 320;
-    const leftLimit    = 0;
-    const rightLimit   = gameArea.clientWidth - playerWidth;
-
-    /* ---------------- Player Position & Physics ---------------- */
+    // Only posX is affected; background stays centered
     let posX = spawnSide === 'left' ? leftLimit : rightLimit;
     let posY = 0;
-    let isJumping      = false;
-    let jumpSpeed      = 0;
-    const gravity      = 0.8;
-    let keys           = {};
-    let inDialog       = false;
-    let interactionFinished = false;
-    let waitingBlock   = false;   // disables movement until block collected
-    let blockColor     = 'red';   // default collectible block color
 
-    /* ---------------- Dialog Data ---------------- */
+    // ---------------- Physics & State ----------------
+    let isJumping = false, jumpSpeed = 0;
+    const gravity = 0.8;
+    let keys = {};
+    let inDialog = false;
+    let interactionFinished = false;
+    let waitingBlock = false;
+    let blockColor = 'red';
+
+    // ---------------- Dialog Data ----------------
     const greeting   = 'Здравствуйте, путник!';
     const question   = 'Что растёт под землей, но свет любит?';
     const answers    = ['Грибы','Камни','Рыбы','Корни'];
     const correctIdx = 0;
     const correctTip = 'Правильно! Грибы не боятся темноты.';
 
-    /* ---------------- Helper: Show Question & Choices ---------------- */
+    // ---------------- Show Choices ----------------
     function showQuestion() {
       dialogText.textContent = question;
       choicesDiv.innerHTML = '';
@@ -150,13 +148,12 @@
       });
     }
 
-    /* ---------------- Start Initial Dialog ---------------- */
+    // ---------------- Start Initial Dialog ----------------
     function startDialog() {
       inDialog = true;
       overlay.style.display = 'block';
       dialogText.textContent = greeting;
       choicesDiv.innerHTML = '';
-      // Wait for player to press a key or click before showing question
       const proceed = () => {
         showQuestion();
         window.removeEventListener('keydown', proceed);
@@ -166,7 +163,7 @@
       window.addEventListener('mousedown', proceed);
     }
 
-    /* ---------------- Handle Answer Selection ---------------- */
+    // ---------------- Handle Answer ----------------
     function selectAnswer(i) {
       if (i === correctIdx) {
         dialogText.textContent = correctTip;
@@ -183,7 +180,7 @@
       }
     }
 
-    /* ---------------- Setup Collectible Block ---------------- */
+    // ---------------- Setup Collectible Block ----------------
     function setupCollectible() {
       waitingBlock = true;
       player.style.background = "url('player_hands.png') center center no-repeat";
@@ -191,8 +188,7 @@
       const block = document.createElement('div');
       block.className = 'collect-block';
       block.style.background = blockColor;
-      // Center above player
-      block.style.left   = (posX + (playerWidth - 60)/2) + 'px';
+      block.style.left = (posX + (playerWidth - 60)/2) + 'px';
       block.style.bottom = (80 + posY + playerWidth + 10) + 'px';
       gameArea.appendChild(block);
       block.addEventListener('click', () => {
@@ -207,19 +203,19 @@
       });
     }
 
-    /* ---------------- Update Player CSS Position ---------------- */
+    // ---------------- Update Position ----------------
     function updatePos() {
-      player.style.left   = posX + 'px';
+      player.style.left = posX + 'px';
       player.style.bottom = (80 + posY) + 'px';
     }
 
-    /* ---------------- Show/Hide Prompt ---------------- */
+    // ---------------- Proximity Prompt ----------------
     function checkProximity() {
       const wizardX = (gameArea.clientWidth - playerWidth)/2;
       prompt.style.display = (!inDialog && Math.abs(posX - wizardX) < playerWidth*0.6) ? 'block' : 'none';
     }
 
-    /* ---------------- Main Game Loop ---------------- */
+    // ---------------- Game Loop ----------------
     function gameLoop() {
       if (!inDialog && !waitingBlock) {
         if (keys['arrowleft']||keys['a']) { posX = Math.max(leftLimit, posX-4); player.classList.add('flipped'); }
@@ -231,9 +227,19 @@
     }
     updatePos(); gameLoop();
 
-    /* ---------------- Input Events ---------------- */
-    document.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; });
-    document.addEventListener('keyup',   e => { keys[e.key.toLowerCase()] = false; });
+    // ---------------- Input Events ----------------
+    document.addEventListener('keydown', e => {
+      keys[e.key.toLowerCase()] = true;
+      if (e.key.toLowerCase() === 'e' && prompt.style.display === 'block') {
+        if (!interactionFinished) startDialog();
+        else if (!waitingBlock) {
+          overlay.style.display = 'block';
+          dialogText.textContent = 'Иди же дальше и собери все части ключа!';
+          setTimeout(() => { overlay.style.display='none'; }, 2000);
+        }
+      }
+    });
+    document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
   </script>
 </body>
 </html>
