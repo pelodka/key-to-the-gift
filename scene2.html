@@ -33,7 +33,6 @@
     /* When transitioning, apply the pixellated zoom out */
     #wrapper.transition {
       animation: pixelate-out var(--transition-duration) steps(8) forwards;
-      /* center the zoom */
       transform-origin: center center;
     }
     /* Game area */
@@ -114,15 +113,20 @@
     updateScale();
 
     // Scene2 logic
-    const player = document.getElementById('player');
-    const wrapper = document.getElementById('wrapper');
-    const leftLimit = 0, rightLimit = 1920 - 320;
-    let posX = 800, posY = 0;
-    let isJumping = false, jumpSpeed = 0;
-    const gravity = 0.8;
-    let keys = {}, canMove = false, transitioning = false;
+    const player       = document.getElementById('player');
+    const wrapper      = document.getElementById('wrapper');
+    const leftLimit    = 0;
+    const rightLimit   = 1920 - 320;
+    let posX           = 800;
+    let posY           = 0;
+    let isJumping      = false;
+    let jumpSpeed      = 0;
+    const gravity      = 0.8;
+    let keys           = {};
+    let canMove        = false;
+    let transitioning  = false;
 
-    // Initial speech
+    // Initial speech bubble
     const bubble = document.createElement('div');
     bubble.className = 'speech';
     bubble.textContent = 'НУ И ГДЕ МОИ ПОДАРКИ?! КУДА ТЕПЕРЬ ИДТИ - НАЛЕВО ИЛИ НАПРАВО?';
@@ -131,61 +135,87 @@
     // Input handlers
     window.addEventListener('keydown', e => {
       keys[e.key.toLowerCase()] = true;
-      if (!canMove && !transitioning) { canMove = true; bubble.remove(); }
+      if (!canMove && !transitioning) {
+        canMove = true;
+        bubble.remove();
+      }
     });
-    window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+    window.addEventListener('keyup', e => {
+      keys[e.key.toLowerCase()] = false;
+    });
     window.addEventListener('mousedown', () => {
-      if (!canMove && !transitioning) { canMove = true; bubble.remove(); }
+      if (!canMove && !transitioning) {
+        canMove = true;
+        bubble.remove();
+      }
     });
     [['left','arrowleft'], ['jump',' '], ['right','arrowright']].forEach(([id, key]) => {
       const btn = document.getElementById('btn-' + id);
       btn.addEventListener('touchstart', e => {
         e.preventDefault(); keys[key] = true;
-        if (!canMove && !transitioning) { canMove = true; bubble.remove(); }
+        if (!canMove && !transitioning) {
+          canMove = true;
+          bubble.remove();
+        }
       }, {passive:false});
       btn.addEventListener('touchend', e => {
         e.preventDefault(); keys[key] = false;
       }, {passive:false});
     });
 
-    // Position updater
+    // Update player position
     function updatePos() {
-      player.style.left = posX + 'px';
+      player.style.left   = posX + 'px';
       player.style.bottom = (100 + posY) + 'px';
     }
 
-    // Start the pixelated transition then navigate
-    function startTransition() {
+    /**
+     * startTransition(side)
+     * side = 'left' or 'right'
+     * Pixelated zoom-out, then navigate passing exit side
+     */
+    function startTransition(side) {
       if (transitioning) return;
       transitioning = true;
       canMove = false;
       wrapper.classList.add('transition');
       setTimeout(() => {
-        window.location.href = 'wizard01.html';
-      }, 600); // must match --transition-duration
+        window.location.href = `wizard01.html?exit=${side}`;
+      }, 600); // matches --transition-duration
     }
 
     // Main game loop
     function gameLoop() {
       if (canMove && !transitioning) {
+        // Move left
         if (keys['arrowleft'] || keys['a']) {
           posX = Math.max(leftLimit, posX - 4);
           player.classList.add('flipped');
-          if (posX === leftLimit) startTransition();
+          if (posX === leftLimit) startTransition('left');
         }
+        // Move right
         if (keys['arrowright'] || keys['d']) {
           posX = Math.min(rightLimit, posX + 4);
           player.classList.remove('flipped');
-          if (posX === rightLimit) startTransition();
+          if (posX === rightLimit) startTransition('right');
         }
+        // Jump
         if ((keys[' '] || keys['spacebar']) && !isJumping) {
-          isJumping = true; jumpSpeed = 15;
+          isJumping = true;
+          jumpSpeed = 15;
         }
       }
+
+      // Gravity
       if (isJumping) {
-        posY += jumpSpeed; jumpSpeed -= gravity;
-        if (posY <= 0) { posY = 0; isJumping = false; }
+        posY += jumpSpeed;
+        jumpSpeed -= gravity;
+        if (posY <= 0) {
+          posY = 0;
+          isJumping = false;
+        }
       }
+
       updatePos();
       requestAnimationFrame(gameLoop);
     }
