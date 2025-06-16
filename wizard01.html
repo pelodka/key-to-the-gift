@@ -106,14 +106,16 @@
     const question   = 'Какой стиль одежды ты предпочитаешь?';
     const answers    = ['Спорт (спортивка, кеды)','Спорт шик (спортивка, туфли)','Business Formal (брюки, пиджак, рубашка, галстук, туфли)','Business Casual (брюки, пиджак, футболка, тапочки)'];
     const correctIdx = 2;
-    const correctTip = 'Ну конечно! Спасибо! Кстати, я должен дать тебе подсказку - ROT.';
+    const correctTip = 'Ну конечно! Спасибо! Кстати, я должен дать тебе подсказку - это ROT.';
 
     // Show question
     function showQuestion() {
       dialogText.textContent = question;
       choicesDiv.innerHTML = '';
       answers.forEach((ans,i) => {
-        const btn = document.createElement('button'); btn.className='choice-btn'; btn.textContent=ans;
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.textContent = ans;
         btn.onclick = () => selectAnswer(i);
         choicesDiv.appendChild(btn);
       });
@@ -125,11 +127,16 @@
       overlay.style.display = 'block';
       dialogText.textContent = greeting;
       choicesDiv.innerHTML = '';
-      // wait for any input to proceed
-      const proceed = () => { showQuestion(); cleanupListeners(); };
-      function cleanupListeners() { window.removeEventListener('keydown', proceed); window.removeEventListener('mousedown', proceed); }
-      window.addEventListener('keydown', proceed);
-      window.addEventListener('mousedown', proceed);
+      // Delay binding so greeting isn't skipped
+      setTimeout(() => {
+        const proceed = () => { showQuestion(); cleanupListeners(); };
+        const cleanupListeners = () => {
+          window.removeEventListener('keydown', proceed);
+          window.removeEventListener('mousedown', proceed);
+        };
+        window.addEventListener('keydown', proceed);
+        window.addEventListener('mousedown', proceed);
+      }, 0);
     }
 
     // Handle answer
@@ -137,62 +144,80 @@
       if (i === correctIdx) {
         dialogText.textContent = correctTip;
         interactionFinished = true;
-        setTimeout(() => { overlay.style.display='none'; inDialog=false; setupCollectible(); }, 1500);
+        setTimeout(() => {
+          overlay.style.display = 'none';
+          inDialog = false;
+          setupCollectible();
+        }, 1500);
       } else {
         dialogText.textContent = 'Неправильно, попробуйте ещё.';
         choicesDiv.innerHTML = '';
-        setTimeout(showQuestion,1000);
+        setTimeout(showQuestion, 1000);
       }
     }
 
     // Set up collectible block
     function setupCollectible() {
       waitingBlock = true;
-      player.style.background="url('player_hands.png') center center no-repeat";
-      player.style.backgroundSize='contain';
-      const block=document.createElement('div'); block.className='collect-block'; block.style.background=blockColor;
-      block.style.left=(posX+(playerWidth-60)/2)+'px';
-      block.style.bottom=(80+posY+playerWidth+10)+'px';
+      player.style.background = "url('player_hands.png') center center no-repeat";
+      player.style.backgroundSize = 'contain';
+      const block = document.createElement('div');
+      block.className = 'collect-block';
+      block.style.background = blockColor;
+      block.style.left = (posX + (playerWidth - 60)/2) + 'px';
+      block.style.bottom = (80 + posY + playerWidth + 10) + 'px';
       gameArea.appendChild(block);
-      block.addEventListener('click',()=>{
-        block.style.transition='all 0.5s ease-out'; block.style.left='0px'; block.style.bottom=(gameArea.clientHeight-40)+'px';
-        block.addEventListener('transitionend',()=>{ block.remove(); waitingBlock=false; player.style.background="url('player_idle.png') center center no-repeat"; player.style.backgroundSize='contain'; },{once:true});
+      block.addEventListener('click', () => {
+        block.style.transition = 'all 0.5s ease-out';
+        block.style.left = '0px';
+        block.style.bottom = (gameArea.clientHeight - 40) + 'px';
+        block.addEventListener('transitionend', () => {
+          block.remove();
+          waitingBlock = false;
+          player.style.background = "url('player_idle.png') center center no-repeat";
+          player.style.backgroundSize = 'contain';
+        }, { once: true });
       });
     }
 
     // Update position
-    function updatePos() { player.style.left=posX+'px'; player.style.bottom=(80+posY)+'px'; }
+    function updatePos() {
+      player.style.left = posX + 'px';
+      player.style.bottom = (80 + posY) + 'px';
+    }
 
     // Show prompt
     function checkProximity() {
-      const wizardX=(gameArea.clientWidth-playerWidth)/2;
-      prompt.style.display = (!inDialog && !waitingBlock && Math.abs(posX-wizardX)<playerWidth*0.6)?'block':'none';
+      const wizardX = (gameArea.clientWidth - playerWidth)/2;
+      prompt.style.display = (!inDialog && !waitingBlock && Math.abs(posX - wizardX) < playerWidth*0.6) ? 'block' : 'none';
     }
 
     // Game loop
     function gameLoop() {
       if (!inDialog && !waitingBlock) {
-        if (keys['arrowleft']||keys['a']) { posX=Math.max(leftLimit,posX-4); player.classList.add('flipped'); }
-        if (keys['arrowright']||keys['d']){ posX=Math.min(rightLimit,posX+4); player.classList.remove('flipped'); }
-        if ((keys[' ']||keys['arrowup']||keys['w']) && !isJumping) { isJumping=true; jumpSpeed=15; }
+        if (keys['arrowleft'] || keys['a']) { posX = Math.max(leftLimit, posX - 4); player.classList.add('flipped'); }
+        if (keys['arrowright'] || keys['d']){ posX = Math.min(rightLimit, posX + 4); player.classList.remove('flipped'); }
+        if ((keys[' '] || keys['arrowup'] || keys['w']) && !isJumping) { isJumping = true; jumpSpeed = 15; }
       }
-      if (isJumping) { posY+=jumpSpeed; jumpSpeed-=gravity; if (posY<=0){posY=0;isJumping=false;} }
+      if (isJumping) { posY += jumpSpeed; jumpSpeed -= gravity; if (posY <= 0) { posY = 0; isJumping = false; } }
       updatePos(); checkProximity(); requestAnimationFrame(gameLoop);
     }
     updatePos(); gameLoop();
 
     // Input
-    document.addEventListener('keydown',e=>{
-      keys[e.key.toLowerCase()]=true;
-      if (e.key.toLowerCase()==='e' && prompt.style.display==='block') {
+    document.addEventListener('keydown', e => {
+      keys[e.key.toLowerCase()] = true;
+      if (e.key.toLowerCase() === 'e' && prompt.style.display === 'block') {
         if (!interactionFinished) startDialog();
         else if (!waitingBlock) {
-          overlay.style.display='block'; dialogText.textContent='Иди же дальше и собери все части ключа!';
-          setTimeout(()=>{overlay.style.display='none';},2000);
+          overlay.style.display = 'block';
+          dialogText.textContent = 'Иди же дальше и собери все части ключа!';
+          choicesDiv.innerHTML = ''; // clear any old buttons
+          setTimeout(() => { overlay.style.display = 'none'; }, 2000);
         }
       }
     });
-    document.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
+    document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
   </script>
 </body>
 </html>
