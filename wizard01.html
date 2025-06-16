@@ -104,7 +104,12 @@
     // Dialog data
     const greeting   = 'Привет, Саша! Представляешь, я проснулся сегодня восьмибитным, а в голове вертится вопрос!';
     const question   = 'Какой стиль одежды ты предпочитаешь?';
-    const answers    = ['Спорт (спортивка, кеды)','Спорт шик (спортивка, туфли)','Business Formal (брюки, пиджак, рубашка, галстук, туфли)','Business Casual (брюки, пиджак, футболка, тапочки)'];
+    const answers    = [
+      'Спорт (спортивка, кеды)',
+      'Спорт шик (спортивка, туфли)',
+      'Business Formal (брюки, пиджак, рубашка, галстук, туфли)',
+      'Business Casual (брюки, пиджак, футболка, тапочки)'
+    ];
     const correctIdx = 2;
     const correctTip = 'Ну конечно! Спасибо! Кстати, я должен дать тебе подсказку - это ROT.';
 
@@ -112,7 +117,7 @@
     function showQuestion() {
       dialogText.textContent = question;
       choicesDiv.innerHTML = '';
-      answers.forEach((ans,i) => {
+      answers.forEach((ans, i) => {
         const btn = document.createElement('button');
         btn.className = 'choice-btn';
         btn.textContent = ans;
@@ -146,32 +151,36 @@
       choicesDiv.innerHTML = '';
 
       if (i === correctIdx) {
+        // Correct answer path
         dialogText.textContent = correctTip;
-      } else {
-        dialogText.textContent = 'Неправильно, попробуйте ещё.';
-      }
-
-      // Wait until any keypress or click
-      const onInput = () => {
-        cleanup();
-        overlay.style.display = 'none';
-        inDialog = false;
-
-        if (i === correctIdx) {
+        const onInput = () => {
+          cleanup();
+          overlay.style.display = 'none';
+          inDialog = false;
           interactionFinished = true;
           setupCollectible();
-        } else {
+        };
+        const cleanup = () => {
+          window.removeEventListener('keydown', onInput);
+          window.removeEventListener('mousedown', onInput);
+        };
+        window.addEventListener('keydown', onInput);
+        window.addEventListener('mousedown', onInput);
+
+      } else {
+        // Wrong answer: acknowledge and re-show variants
+        dialogText.textContent = 'Нее, это не совсем то!';
+        const onInput = () => {
+          cleanup();
           showQuestion();
-        }
-      };
-
-      const cleanup = () => {
-        window.removeEventListener('keydown', onInput);
-        window.removeEventListener('mousedown', onInput);
-      };
-
-      window.addEventListener('keydown', onInput);
-      window.addEventListener('mousedown', onInput);
+        };
+        const cleanup = () => {
+          window.removeEventListener('keydown', onInput);
+          window.removeEventListener('mousedown', onInput);
+        };
+        window.addEventListener('keydown', onInput);
+        window.addEventListener('mousedown', onInput);
+      }
     }
 
     // Set up collectible block
@@ -217,17 +226,28 @@
         if (keys['arrowright'] || keys['d']){ posX = Math.min(rightLimit, posX + 4); player.classList.remove('flipped'); }
         if ((keys[' '] || keys['arrowup'] || keys['w']) && !isJumping) { isJumping = true; jumpSpeed = 15; }
       }
-      if (isJumping) { posY += jumpSpeed; jumpSpeed -= gravity; if (posY <= 0) { posY = 0; isJumping = false; } }
-      updatePos(); checkProximity(); requestAnimationFrame(gameLoop);
+      if (isJumping) {
+        posY += jumpSpeed;
+        jumpSpeed -= gravity;
+        if (posY <= 0) {
+          posY = 0;
+          isJumping = false;
+        }
+      }
+      updatePos();
+      checkProximity();
+      requestAnimationFrame(gameLoop);
     }
-    updatePos(); gameLoop();
+    updatePos();
+    gameLoop();
 
     // Input
     document.addEventListener('keydown', e => {
       keys[e.key.toLowerCase()] = true;
       if (e.key.toLowerCase() === 'e' && prompt.style.display === 'block') {
-        if (!interactionFinished) startDialog();
-        else if (!waitingBlock) {
+        if (!interactionFinished) {
+          startDialog();
+        } else if (!waitingBlock) {
           overlay.style.display = 'block';
           dialogText.textContent = 'Иди же дальше и собери все части ключа!';
           choicesDiv.innerHTML = '';
@@ -235,7 +255,9 @@
         }
       }
     });
-    document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+    document.addEventListener('keyup', e => {
+      keys[e.key.toLowerCase()] = false;
+    });
   </script>
 </body>
 </html>
