@@ -6,185 +6,67 @@
   <title>Wizard Encounter with Document Sorting Puzzle</title>
   <style>
     /* Base reset */
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden;
-      background: black;
-      font-family: 'Courier New', monospace;
-    }
+    html, body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: black; font-family: 'Courier New', monospace; }
     /* Wrapper scaling */
-    #wrapper {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 1920px;
-      height: 1200px;
-      transform-origin: top left;
-    }
+    #wrapper { position: absolute; top: 0; left: 0; width: 1920px; height: 1200px; transform-origin: top left; }
     /* Background */
-    #game-container {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      background: url('background.png') center center / cover no-repeat;
-    }
+    #game-container { position: relative; width: 100%; height: 100%; background: url('background.png') center center / cover no-repeat; }
     /* Player sprite */
     #player {
-      position: absolute;
-      width: 320px;
-      height: 320px;
-      bottom: 80px;
-      left: 100px;
-      transform-origin: center bottom;
+      position: absolute; width: 320px; height: 320px; bottom: 80px; transform-origin: center bottom;
       background: url('player_idle.png') center center no-repeat;
-      background-size: contain;
-      image-rendering: pixelated;
+      background-size: contain; image-rendering: pixelated;
     }
-    #player.flipped {
-      transform: scaleX(-1);
-    }
+    #player.flipped { transform: scaleX(-1); }
     /* Wizard */
-    #wizard {
-      position: absolute;
-      width: 320px;
-      height: 320px;
-      bottom: 80px;
-      left: 50%;
-      transform: translateX(-50%);
-      pointer-events: none;
-    }
-    #wizard-img {
-      width: 100%;
-      height: 100%;
-      display: block;
-      image-rendering: pixelated;
-    }
-    /* “Press E” prompt */
+    #wizard { position: absolute; width: 320px; height: 320px; bottom: 80px; left: 50%; transform: translateX(-50%); pointer-events: none; }
+    #wizard-img { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+    /* Prompt */
     #prompt {
-      position: absolute;
-      bottom: calc(100% + 10px);
-      left: 50%;
-      transform: translateX(-50%);
-      background: white;
-      color: black;
-      padding: 8px 12px;
-      border: 4px solid red;
-      border-radius: 4px;
-      font-size: 28px;
-      font-family: 'Arial Black';
-      text-transform: uppercase;
-      pointer-events: none;
-      display: none;
-      white-space: nowrap;
+      position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%);
+      background: white; color: black; padding: 8px 12px; border: 4px solid red; border-radius: 4px;
+      font-size: 28px; font-family: 'Arial Black'; text-transform: uppercase;
+      pointer-events: none; display: none; white-space: nowrap;
     }
     /* Collectible block */
-    .collect-block {
-      position: absolute;
-      width: 60px;
-      height: 40px;
-      cursor: pointer;
-      image-rendering: pixelated;
-    }
+    .collect-block { position: absolute; width: 60px; height: 40px; cursor: pointer; image-rendering: pixelated; }
 
-    /* GREETING OVERLAY */
-    #dialog-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.7);
-      display: none;
-      z-index: 100;
-    }
-    #dialog-box {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%,-50%);
-      background: white;
-      padding: 32px;
-      border: 4px solid black;
-      width: 700px;
-      max-width: 90vw;
-      font-family: 'Courier New', monospace;
-    }
-    #dialog-text {
-      text-align: center;
-      font-size: 24px;
-      line-height: 1.4;
-    }
-
-    /* PUZZLE OVERLAY */
+    /* Puzzle-specific styles */
     #puzzle-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.7);
-      display: none;
-      z-index: 100;
+      display: none; z-index: 100;
     }
     #puzzle-box {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%,-50%);
-      background: white;
-      padding: 32px;
-      border: 4px solid black;
-      width: 800px;
-      max-width: 90vw;
-      font-family: 'Courier New', monospace;
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      background: white; padding: 32px; border: 4px solid black;
+      width: 800px; max-width: 90vw; font-family: 'Courier New', monospace;
     }
-    #dialog-name {
-      text-align: center;
-      font-size: 28px;
-      font-weight: bold;
+    #puzzle-box #dialog-name {
+      text-align: center; font-size: 28px; font-weight: bold;
       margin-bottom: 16px;
     }
-    #dialog-text-puzzle {
-      text-align: center;
-      font-size: 24px;
-      margin-bottom: 24px;
+    #puzzle-box #dialog-text {
+      text-align: center; font-size: 24px; margin-bottom: 24px;
     }
     .blocks-container {
-      display: grid;
-      grid-template-columns: repeat(2,1fr);
-      gap: 8px;
-      max-height: 400px;
-      overflow-y: auto;
-      margin-bottom: 24px;
+      display: grid; grid-template-columns: repeat(2,1fr);
+      gap: 8px; max-height: 400px; overflow-y: auto; margin-bottom: 24px;
     }
     .block {
-      padding: 12px;
-      background: #eee;
-      border: 2px solid #333;
-      cursor: grab;
-      user-select: none;
-      font-size: 20px;
+      padding: 12px; background: #eee; border: 2px solid #333;
+      cursor: grab; user-select: none; font-size: 20px;
     }
     .drop-areas {
-      display: flex;
-      justify-content: space-between;
+      display: flex; justify-content: space-between;
     }
     .drop-area-container {
-      width: 45%;
-      display: none;
+      width: 45%; display: none;
     }
     .drop-area {
-      width: 100%;
-      min-height: 80px;
-      border: 3px dashed #333;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      font-weight: bold;
+      width: 100%; min-height: 80px; border: 3px dashed #333;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: bold;
     }
   </style>
 </head>
@@ -198,22 +80,11 @@
       </div>
       <div id="ground"></div>
 
-      <!-- GREETING Overlay -->
-      <div id="dialog-overlay">
-        <div id="dialog-box">
-          <div id="dialog-text">
-            Ох, как хорошо что ты здесь, Саша!<br />
-            Все приказы в моей папке перепутались,<br />
-            помоги разобраться!
-          </div>
-        </div>
-      </div>
-
-      <!-- PUZZLE Overlay -->
+      <!-- Puzzle Container -->
       <div id="puzzle-overlay">
         <div id="puzzle-box">
           <div id="dialog-name"></div>
-          <div id="dialog-text-puzzle"></div>
+          <div id="dialog-text"></div>
           <div id="blocks" class="blocks-container"></div>
           <div class="drop-areas">
             <div id="rejectContainer" class="drop-area-container">
@@ -232,10 +103,9 @@
   <script>
     // Responsive scaling
     function updateScale() {
-      const vw = window.innerWidth,
-            vh = window.innerHeight,
-            scale = Math.min(vw/1920, vh/1200),
-            wrap = document.getElementById('wrapper');
+      const vw = window.innerWidth, vh = window.innerHeight;
+      const scale = Math.min(vw/1920, vh/1200);
+      const wrap = document.getElementById('wrapper');
       wrap.style.transform = `scale(${scale})`;
       wrap.style.left = `${(vw - 1920*scale)/2}px`;
       wrap.style.top  = `${(vh - 1200*scale)/2}px`;
@@ -244,24 +114,15 @@
     updateScale();
 
     // DOM refs
-    const player           = document.getElementById('player');
-    const gameArea         = document.getElementById('game-container');
-    const prompt           = document.getElementById('prompt');
-    const dialogOverlay    = document.getElementById('dialog-overlay');
-    const overlayPuzzle    = document.getElementById('puzzle-overlay');
-    const dialogName       = document.getElementById('dialog-name');
-    const dialogTextPuzzle = document.getElementById('dialog-text-puzzle');
-    const blocksDiv        = document.getElementById('blocks');
-    const rejectContainer  = document.getElementById('rejectContainer');
-    const approveContainer = document.getElementById('approveContainer');
-    const rejectArea       = document.getElementById('rejectArea');
-    const approveArea      = document.getElementById('approveArea');
-
+    const player     = document.getElementById('player');
+    const gameArea   = document.getElementById('game-container');
+    const prompt     = document.getElementById('prompt');
+    
     // Puzzle data
     const rejectItems = [
       'Приказ об установлении дресс-кода для всех работников в любое время года - только черный костюм',
       'Приказ об объявлении выговора работникам, не употреблявшим коньяк Арарат на последнем корпоративе',
-      'Ձայնագրություն Երևանի աշխատակիցներին շտապաբար վերադարձնելու մասին Պետերբուրգ։',
+      'Ձայնագրություն Երևանի աշխատակիցներին շտապաբար վերադարձնելու մասին Պետերբուργ։',
       'Приказ об окончании ковида в связи со срочным переездом',
       'Приказ об использовании eMM в работе всех департаментов'
     ];
@@ -272,21 +133,33 @@
       'Правильный приказ 4',
       'Правильный приказ 5'
     ];
-    const items       = [...rejectItems, ...approveItems].sort(() => Math.random() - 0.5);
-    const rejectSet   = new Set(rejectItems);
-    const totalCount  = items.length;
-    let placedCount   = 0;
+    const items = [...rejectItems, ...approveItems].sort(() => Math.random() - 0.5);
+    const rejectSet = new Set(rejectItems);
+    const totalCount = items.length;
+    let placedCount = 0;
     let interactionFinished = false;
-    let waitingBlock  = false;
+    let waitingBlock = false;
+
+    // Puzzle DOM refs
+    const overlayPuzzle    = document.getElementById('puzzle-overlay');
+    const dialogName       = document.getElementById('dialog-name');
+    const dialogTextPuzzle = document.getElementById('dialog-text');
+    const blocksDiv        = document.getElementById('blocks');
+    const rejectContainer  = document.getElementById('rejectContainer');
+    const approveContainer = document.getElementById('approveContainer');
+    const rejectArea       = document.getElementById('rejectArea');
+    const approveArea      = document.getElementById('approveArea');
 
     // 1) Greeting → Puzzle
     function startDialog() {
       interactionFinished = true;
-      dialogOverlay.style.display = 'block';
+      overlayPuzzle.style.display = 'block';
+      dialogName.textContent = '';
+      // Updated greeting text
+      dialogTextPuzzle.textContent = 'Ох, как хорошо что ты здесь, Саша! Все приказы в моей папке перепутались, помоги разобраться!';
       const proceed = () => {
         window.removeEventListener('keydown', proceed);
         window.removeEventListener('mousedown', proceed);
-        dialogOverlay.style.display = 'none';
         showPuzzle();
       };
       window.addEventListener('keydown', proceed);
@@ -294,7 +167,6 @@
     }
 
     function showPuzzle() {
-      overlayPuzzle.style.display = 'block';
       dialogName.textContent = 'НА ПОДПИСЬ';
       dialogTextPuzzle.textContent = '';
       blocksDiv.innerHTML = '';
@@ -336,10 +208,10 @@
     // 3) Puzzle Complete
     function finishPuzzle() {
       dialogName.textContent = '';
-      blocksDiv.style.display        = 'none';
+      blocksDiv.style.display      = 'none';
       rejectContainer.style.display  = 'none';
       approveContainer.style.display = 'none';
-      dialogTextPuzzle.textContent   = 'Фух! Большое спасибо! Вот еще одна подсказка - GOLDEN.';
+      dialogTextPuzzle.textContent = 'Фух! Большое спасибо! Вот еще одна подсказка - GOLDEN.';
       const proceed = () => {
         window.removeEventListener('keydown', proceed);
         window.removeEventListener('mousedown', proceed);
@@ -377,32 +249,25 @@
 
     // Movement & game loop
     let keys = {}, isJumping = false, jumpSpeed = 0, gravity = 0.8;
+    function updatePos() {
+      player.style.left = player.offsetLeft + 'px';
+      player.style.bottom = (80 + parseFloat(player.style.bottom) || 0) + 'px';
+    }
     function checkProximity() {
       const wizardX = (gameArea.clientWidth - 320)/2;
       prompt.style.display = (!waitingBlock && Math.abs(player.offsetLeft - wizardX) < 192) ? 'block' : 'none';
     }
     function gameLoop() {
       if (!waitingBlock) {
-        if (keys['arrowleft']||keys['a']) {
-          player.style.left = Math.max(0, player.offsetLeft - 4) + 'px';
-          player.classList.add('flipped');
-        }
-        if (keys['arrowright']||keys['d']) {
-          player.style.left = Math.min(gameArea.clientWidth-320, player.offsetLeft + 4) + 'px';
-          player.classList.remove('flipped');
-        }
-        if ((keys[' ']||keys['arrowup']||keys['w']) && !isJumping) {
-          isJumping = true; jumpSpeed = 15;
-        }
+        if (keys['arrowleft']||keys['a']) { player.style.left = Math.max(0, player.offsetLeft - 4) + 'px'; player.classList.add('flipped'); }
+        if (keys['arrowright']||keys['d']){ player.style.left = Math.min(gameArea.clientWidth-320, player.offsetLeft + 4) + 'px'; player.classList.remove('flipped'); }
+        if ((keys[' ']||keys['arrowup']||keys['w']) && !isJumping) { isJumping = true; jumpSpeed = 15; }
       }
       if (isJumping) {
         const bottom = parseFloat(player.style.bottom) || 0;
         player.style.bottom = bottom + jumpSpeed + 'px';
         jumpSpeed -= gravity;
-        if (bottom + jumpSpeed <= 0) {
-          player.style.bottom = '0px';
-          isJumping = false;
-        }
+        if (bottom + jumpSpeed <= 0) { player.style.bottom = '0px'; isJumping = false;}        
       }
       checkProximity();
       requestAnimationFrame(gameLoop);
@@ -422,9 +287,7 @@
         }
       }
     });
-    document.addEventListener('keyup', e => {
-      keys[e.key.toLowerCase()] = false;
-    });
+    document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
   </script>
 </body>
 </html>
