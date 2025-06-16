@@ -11,33 +11,57 @@
     #wrapper { position: absolute; top: 0; left: 0; width: 1920px; height: 1200px; transform-origin: top left; }
     /* Game area background */
     #game-container { position: relative; width: 100%; height: 100%; background: url('background.png') center center / cover no-repeat; }
-    /* Player sprite */
-    #player { position: absolute; width: 320px; height: 320px; bottom: 80px; transform-origin: center bottom;
-               background: url('player_idle.png') center center no-repeat; background-size: contain; image-rendering: pixelated; }
+    /* Player sprite styling */
+    #player {
+      position: absolute;
+      width: 320px; height: 320px;
+      bottom: 80px;
+      transform-origin: center bottom;
+      /* default idle image */
+      background: url('player_idle.png') center center no-repeat;
+      background-size: contain;
+      image-rendering: pixelated;
+    }
     #player.flipped { transform: scaleX(-1); }
     /* Wizard container */
-    #wizard { position: absolute; width: 320px; height: 320px; bottom: 80px;
-               left: 50%; transform: translateX(-50%);
-               pointer-events: none;
+    #wizard {
+      position: absolute; width: 320px; height: 320px; bottom: 80px;
+      left: 50%; transform: translateX(-50%);
+      pointer-events: none;
     }
-    /* Wizard image: true PNG transparency preserved */
+    /* Transparent wizard sprite */
     #wizard-img { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
     /* Ground collision area */
     #ground { position: absolute; bottom: 0; left: 0; width: 100%; height: 100px; }
-    /* Speech prompt above wizard */
-    #prompt { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%);
-              background: white; color: black; padding: 8px 12px; border: 4px solid red; border-radius: 4px;
-              font-size: 24px; font-family: 'Arial Black'; text-transform: uppercase; pointer-events: none;
-              display: none; white-space: nowrap; }
+    /* Prompt above wizard */
+    #prompt {
+      position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%);
+      background: white; color: black;
+      padding: 8px 12px; border: 4px solid red; border-radius: 4px;
+      font-size: 24px; font-family: 'Arial Black'; text-transform: uppercase;
+      pointer-events: none; display: none; white-space: nowrap;
+    }
     /* Dialog overlay styling */
     #dialog-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); display:none; }
-    #dialog-box { position: absolute; top:50%; left:50%; transform: translate(-50%,-50%);
-                  background: white; padding: 24px; border: 4px solid black; width: 600px; max-width: 80vw;
-                  font-family: 'Courier New', monospace; }
+    #dialog-box {
+      position: absolute; top:50%; left:50%; transform: translate(-50%,-50%);
+      background: white; padding: 24px; border: 4px solid black;
+      width: 600px; max-width: 80vw;
+      font-family: 'Courier New', monospace;
+    }
     #dialog-text { margin-bottom: 16px; font-size: 20px; color: black; }
-    .choice-btn { display: block; margin: 8px 0; padding: 8px 12px; background: #eee; border: 2px solid #333;
-                  cursor: pointer; font-size: 18px; }
+    .choice-btn {
+      display: block; margin: 8px 0; padding: 8px 12px;
+      background: #eee; border: 2px solid #333; cursor: pointer; font-size: 18px;
+    }
     .choice-btn:hover { background: #ddd; }
+    /* Collectible block styling (dynamic color) */
+    .collect-block {
+      position: absolute;
+      width: 30px; height: 20px;
+      cursor: pointer;
+      image-rendering: pixelated;
+    }
   </style>
 </head>
 <body>
@@ -59,7 +83,7 @@
   </div>
 
   <script>
-    // Responsive scaling
+    /* ---------------- Responsive Scaling ---------------- */
     function updateScale() {
       const vw = window.innerWidth, vh = window.innerHeight;
       const s = Math.min(vw/1920, vh/1200);
@@ -71,56 +95,47 @@
     window.addEventListener('resize', updateScale);
     updateScale();
 
-    // DOM refs
+    /* ---------------- DOM References ---------------- */
     const player     = document.getElementById('player');
-    const wizard     = document.getElementById('wizard');
+    const gameArea   = document.getElementById('game-container');
     const prompt     = document.getElementById('prompt');
     const overlay    = document.getElementById('dialog-overlay');
     const dialogText = document.getElementById('dialog-text');
     const choicesDiv = document.getElementById('choices');
 
-    // === Spawn Logic ===
-    // Read the exit side from screen2 via URL param 'exit'
-    const params   = new URLSearchParams(location.search);
-    const exitSide = params.get('exit'); // now reading 'exit' instead of 'spawn'
+    /* ---------------- Spawn Logic (invert exit side) ---------------- */
+    const params   = new URLSearchParams(window.location.search);
+    const exitSide = params.get('exit');
     let spawnSide;
     if (exitSide === 'left')      spawnSide = 'right';
     else if (exitSide === 'right') spawnSide = 'left';
-    else                           spawnSide = 'left'; // default to left if no param
+    else                           spawnSide = 'left'; // default
 
-    // Movement bounds
-    const container   = document.getElementById('game-container');
-    const playerWidth = 320;
-    const leftLimit   = 0;
-    const rightLimit  = container.clientWidth - playerWidth;
+    /* ---------------- Movement Bounds ---------------- */
+    const playerWidth  = 320;
+    const leftLimit    = 0;
+    const rightLimit   = gameArea.clientWidth - playerWidth;
 
-    // Set initial posX based on spawnSide
+    /* ---------------- Player Position & Physics ---------------- */
     let posX = spawnSide === 'left' ? leftLimit : rightLimit;
     let posY = 0;
+    let isJumping      = false;
+    let jumpSpeed      = 0;
+    const gravity      = 0.8;
+    let keys           = {};
+    let inDialog       = false;
+    let interactionFinished = false;
+    let waitingBlock   = false;   // disables movement until block collected
+    let blockColor     = 'red';   // default collectible block color
 
-    // Wizard center X
-    const wizardX = (container.clientWidth - playerWidth) / 2;
+    /* ---------------- Dialog Data ---------------- */
+    const greeting   = 'Здравствуйте, путник!';
+    const question   = 'Что растёт под землей, но свет любит?';
+    const answers    = ['Грибы','Камни','Рыбы'];
+    const correctIdx = 0;
+    const correctTip = 'Правильно! Грибы не боятся темноты.';
 
-    // Input tracking
-    const keys = {};
-    document.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; });
-    document.addEventListener('keyup',   e => { keys[e.key.toLowerCase()] = false; });
-
-    // Jump physics
-    let isJumping = false;
-    let jumpSpeed = 0;
-    const gravity = 0.8;
-    // State
-    let inDialog = false, interactionFinished = false;
-
-    // Dialog data
-    const greeting     = 'Здравствуйте, путник!';
-    const question     = 'Что растёт под землей, но свет любит?';
-    const answers      = ['Грибы','Камни','Рыбы'];
-    const correctIndex = 0;
-    const correctTip   = 'Правильно! Грибы не боятся темноты.';
-
-    // Show question and buttons
+    /* ---------------- Helper: Show Question & Choices ---------------- */
     function showQuestion() {
       dialogText.textContent = question;
       choicesDiv.innerHTML = '';
@@ -133,7 +148,7 @@
       });
     }
 
-    // Start dialog
+    /* ---------------- Start Initial Dialog ---------------- */
     function startDialog() {
       inDialog = true;
       overlay.style.display = 'block';
@@ -142,55 +157,118 @@
       setTimeout(() => showQuestion(), 1000);
     }
 
-    // Handle answer
+    /* ---------------- Handle Answer Selection ---------------- */
     function selectAnswer(i) {
-      if (i === correctIndex) {
+      if (i === correctIdx) {
+        // Correct answer flow
         dialogText.textContent = correctTip;
         interactionFinished = true;
-        setTimeout(() => { overlay.style.display = 'none'; inDialog = false; }, 1500);
+        setTimeout(() => {
+          overlay.style.display = 'none';
+          inDialog = false;
+          // AFTER dialog: setup collectible block
+          setupCollectible();
+        }, 1500);
       } else {
+        // Incorrect: show error then retry
         dialogText.textContent = 'Неправильно, попробуйте ещё.';
         choicesDiv.innerHTML = '';
         setTimeout(() => showQuestion(), 1000);
       }
     }
 
-    // Update position
+    /* ---------------- Setup Collectible Block ---------------- */
+    function setupCollectible() {
+      waitingBlock = true;  // disable movement
+
+      // Change player sprite to "hands" version
+      player.style.background = "url('player_hands.png') center center no-repeat";
+      player.style.backgroundSize = 'contain';
+
+      // Create block 30x20px, 10px above player
+      const block = document.createElement('div');
+      block.className = 'collect-block';
+      block.style.background = blockColor;
+      // Center above player
+      block.style.left   = (posX + (playerWidth - 30)/2) + 'px';
+      block.style.bottom = (80 + posY + playerWidth + 10) + 'px';
+      gameArea.appendChild(block);
+
+      // On click: fly to upper-left, then cleanup
+      block.addEventListener('click', () => {
+        // Animate block to top-left over 0.5s
+        block.style.transition = 'all 0.5s ease-out';
+        block.style.left = '0px';
+        // Move to top: set bottom to (gameArea height - block height)
+        block.style.bottom = (gameArea.clientHeight - 20) + 'px';
+
+        block.addEventListener('transitionend', () => {
+          // Remove block
+          block.remove();
+          waitingBlock = false;
+          // Restore player sprite
+          player.style.background = "url('player_idle.png') center center no-repeat";
+          player.style.backgroundSize = 'contain';
+        }, { once: true });
+      });
+    }
+
+    /* ---------------- Update Player CSS Position ---------------- */
     function updatePos() {
-      player.style.left = posX + 'px';
+      player.style.left   = posX + 'px';
       player.style.bottom = (80 + posY) + 'px';
     }
 
-    // Proximity prompt
+    /* ---------------- Show/Hide Prompt ---------------- */
     function checkProximity() {
-      prompt.style.display = (!inDialog && Math.abs(posX - wizardX) < playerWidth*0.6) ? 'block' : 'none';
+      const wizardX = (gameArea.clientWidth - playerWidth)/2;
+      const dx = Math.abs(posX - wizardX);
+      prompt.style.display = (!inDialog && dx < playerWidth*0.6) ? 'block' : 'none';
     }
 
-    // Transition once done
-    function checkTransition() {
-      if (!interactionFinished) return;
-      if (posX <= leftLimit || posX >= rightLimit) {
-        window.location.href = 'wizard02.html?exit=' + (posX <= leftLimit ? 'left' : 'right');
-      }
+    /* ---------------- Check for Special Dialog ---------------- */
+    function trySpecialDialog() {
+      // After correct answer & collectible, show special message once
+      overlay.style.display = 'block';
+      dialogText.textContent = 'Иди же дальше и собери все части ключа!';
+      choicesDiv.innerHTML = '';
+      inDialog = true;
+      setTimeout(() => { overlay.style.display='none'; inDialog=false; }, 2000);
     }
 
-    // Main loop
+    /* ---------------- Main Game Loop ---------------- */
     function gameLoop() {
-      if (!inDialog) {
-        if (keys['arrowleft'] || keys['a']) { posX = Math.max(leftLimit, posX - 4); player.classList.add('flipped'); }
-        if (keys['arrowright']|| keys['d']) { posX = Math.min(rightLimit, posX + 4); player.classList.remove('flipped'); }
-        if ((keys[' ']||keys['arrowup']||keys['w']) && !isJumping) { isJumping = true; jumpSpeed = 15; }
+      if (!inDialog && !waitingBlock) {
+        // Horizontal movement
+        if (keys['arrowleft']||keys['a']) { posX = Math.max(leftLimit, posX-4); player.classList.add('flipped'); }
+        if (keys['arrowright']||keys['d']){ posX = Math.min(rightLimit,posX+4); player.classList.remove('flipped'); }
+        // Jump
+        if ((keys[' ']||keys['spacebar']||keys['arrowup']||keys['w']) && !isJumping) {
+          isJumping = true; jumpSpeed = 15;
+        }
       }
-      if (isJumping) { posY += jumpSpeed; jumpSpeed -= gravity; if (posY <= 0) { posY = 0; isJumping = false; } }
-      updatePos(); checkProximity(); checkTransition();
+
+      // Apply gravity
+      if (isJumping) {
+        posY += jumpSpeed; jumpSpeed -= gravity;
+        if (posY <= 0) { posY=0; isJumping=false; }
+      }
+
+      updatePos(); checkProximity();
       requestAnimationFrame(gameLoop);
     }
     updatePos(); gameLoop();
 
-    // Trigger dialog
+    /* ---------------- Input Events ---------------- */
     document.addEventListener('keydown', e => {
-      if (!inDialog && e.key.toLowerCase() === 'e' && prompt.style.display === 'block') startDialog();
+      keys[e.key.toLowerCase()] = true;
+      // E key triggers dialogs
+      if (e.key.toLowerCase()==='e' && prompt.style.display==='block') {
+        if (!interactionFinished) startDialog();
+        else if (!waitingBlock) trySpecialDialog();
+      }
     });
+    document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
   </script>
 </body>
 </html>
