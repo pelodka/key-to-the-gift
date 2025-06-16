@@ -126,11 +126,14 @@
     const rejectArea       = document.getElementById('rejectArea');
     const approveArea      = document.getElementById('approveArea');
 
+    // start on the ground
+    player.style.bottom = '80px';
+
     // Puzzle data
     const rejectItems = [
       'Приказ об установлении дресс-кода для всех работников в любое время года - только черный костюм',
       'Приказ об объявлении выговора работникам, не употреблявшим коньяк Арарат на последнем корпоративе',
-      'Ձայնագրություն Երևանի աշխատակիցներին շտապաբար վերադարձնելու մասին Պետերբուրգ。',
+      'Ձայնագրություն Երևանի աշխատակիցներին շտապաբար վերադարձնելու մասին Պետերբուրգ։',
       'Приказ об окончании ковида в связи со срочным переездом',
       'Приказ об использовании eMM в работе всех департаментов'
     ];
@@ -157,7 +160,6 @@
         'Ох, как хорошо что ты здесь, Саша! Все приказы в моей папке перепутались, помоги разобраться!';
       
       const proceed = e => {
-        // ignore the original 'E' press
         if (e.type === 'keydown' && e.key.toLowerCase() === 'e') return;
         window.removeEventListener('keydown', proceed);
         window.removeEventListener('mousedown', proceed);
@@ -224,14 +226,15 @@
       window.addEventListener('mousedown', proceed);
     }
 
-    // Collectible spawn (unchanged)…
+    // Collectible spawn
     function setupCollectible() {
       waitingBlock = true;
       player.style.background = "url('player_hands.png') center center no-repeat";
       player.style.backgroundSize = 'contain';
       const block = document.createElement('div');
       block.className = 'collect-block';
-      block.style.background = 'red';
+      // Changed to golden
+      block.style.background = 'gold';
       const xPos = (player.offsetLeft + (320 - 60)/2) + 'px';
       block.style.left   = xPos;
       block.style.bottom = (80 + 320 + 10) + 'px';
@@ -249,8 +252,7 @@
       });
     }
 
-    // Movement & game loop (unchanged)...
-
+    // Movement & game loop (unchanged)…
     let keys = {}, isJumping = false, jumpSpeed = 0, gravity = 0.8;
     function checkProximity() {
       const wizardX = (gameArea.clientWidth - 320) / 2;
@@ -298,6 +300,7 @@
       }
     });
     document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
   </script>
 </body>
 </html>
