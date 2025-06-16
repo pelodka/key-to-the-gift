@@ -10,9 +10,14 @@
     #game-container { position:relative; width:100%; height:100%; background:url('background.png') center/cover no-repeat; }
     #player { position:absolute; width:320px; height:320px; bottom:80px; transform-origin:center bottom; background:url('player_idle.png') center/contain no-repeat; image-rendering:pixelated; }
     #player.flipped { transform:scaleX(-1); }
-    #wizard { position:absolute; width:320px; height:320px; bottom:80px; left:50%; transform:translateX(-50%); pointer-events:none; }
+    #wizard { position:absolute; width:320px; height:320px; bottom:80px; left:50%; transform:translateX(-50%); pointer-events:none; z-index: 1; }
     #wizard-img { width:100%; height:100%; image-rendering:pixelated; }
-    #prompt { position:absolute; bottom:calc(100%+10px); left:50%; transform:translateX(-50%); background:white; color:black; padding:10px 16px; border:4px solid red; border-radius:4px; font-size:32px; font-family:'Arial Black'; text-transform:uppercase; pointer-events:none; display:none; white-space:nowrap; }
+    #prompt {
+      position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%);
+      background: white; color: black; padding: 8px 12px; border: 4px solid red; border-radius: 4px;
+      font-size: 28px; font-family: 'Arial Black'; text-transform: uppercase;
+      pointer-events: none; display: none; white-space: nowrap;
+    }
     #dialog-overlay { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:none; }
     #dialog-box { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:32px; border:4px solid black; width:900px; max-width:95vw; }
     #dialog-name { text-align:center; font-size:36px; font-weight:bold; margin-bottom:20px; }
@@ -86,7 +91,6 @@
     const approveItems = [
       'Правильный приказ 1','Правильный приказ 2','Правильный приказ 3','Правильный приказ 4','Правильный приказ 5'
     ];
-    // Shuffle combined items
     const items = [...rejectItems, ...approveItems].sort(() => Math.random() - 0.5);
     const rejectSet = new Set(rejectItems);
     const totalCount = items.length;
@@ -97,41 +101,44 @@
       dialogName.textContent='';
       dialogText.textContent='Саша! Хорошо, что ты здесь! В моей папке перепутались все документы! Только ты сможешь разобраться!';
       overlay.style.display='block';
-      setTimeout(startPuzzle, 500);
+      // wait for any key or click
+      function proceed(){
+        document.removeEventListener('keydown', proceed);
+        document.removeEventListener('mousedown', proceed);
+        startPuzzle();
+      }
+      document.addEventListener('keydown', proceed);
+      document.addEventListener('mousedown', proceed);
     }
 
     // Puzzle setup
     function startPuzzle(){
+      inDialog=false;
       dialogName.textContent='НА ПОДПИСЬ';
       dialogText.textContent='';
       blocksDiv.innerHTML='';
       items.forEach((text,i)=>{
-        const d=document.createElement('div');
-        d.className='block'; d.textContent=text; d.draggable=true; d.id='b'+i;
-        d.addEventListener('dragstart',e=>e.dataTransfer.setData('text/plain',d.id));
+        const d=document.createElement('div'); d.className='block'; d.textContent=text; d.draggable=true; d.id='b'+i;
+        d.addEventListener('dragstart', e=> e.dataTransfer.setData('text/plain', d.id));
         blocksDiv.appendChild(d);
       });
       blocksDiv.style.display='grid';
       rejectContainer.style.display='block';
       approveContainer.style.display='block';
+      overlay.style.display='block';
     }
 
     // Handle drops
     [rejectArea, approveArea].forEach(area=>{
-      area.addEventListener('dragover',e=>e.preventDefault());
-      area.addEventListener('drop',e=>{
+      area.addEventListener('dragover', e=> e.preventDefault());
+      area.addEventListener('drop', e=>{
         e.preventDefault();
         const id=e.dataTransfer.getData('text/plain');
         const block=document.getElementById(id);
         const isReject=(area===rejectArea);
         const correct=isReject? rejectSet.has(block.textContent) : !rejectSet.has(block.textContent);
-        if(correct){
-          block.remove(); placedCount++;
-          if(placedCount===totalCount) finishPuzzle();
-        } else {
-          dialogText.textContent='Что на это скажет Марк?';
-          setTimeout(()=>dialogText.textContent='',3000);
-        }
+        if(correct){ block.remove(); placedCount++; if(placedCount===totalCount) finishPuzzle(); }
+        else { dialogText.textContent='Что на это скажет Марк?'; setTimeout(()=> dialogText.textContent='', 3000); }
       });
     });
 
@@ -147,18 +154,36 @@
 
     // Spawn golden collectible
     function spawnCollectible(){
-      waitingBlock=true;
-      player.style.background="url('player_hands.png') center/contain no-repeat";
-      const loot=document.createElement('div');
-      loot.className='collect-block'; loot.style.background='gold';
-      loot.style.left=`${posX+(playerWidth-60)/2}px`;
+      waitingBlock = true;
+      // Prevent dialog state
+      inDialog = false;
+      player.style.background = "url('player_hands.png') center/contain no-repeat";
+      const loot = document.createElement('div');
+      loot.className = 'collect-block';
+      loot.style.background = 'gold';
+      loot.style.left = (posX + (playerWidth - 60)/2) + 'px';
+      loot.style.bottom = (80 + posY + playerWidth + 10) + 'px';
+      gameArea.appendChild(loot);
+      loot.addEventListener('click', () => {
+        loot.style.transition = 'all 0.5s ease-out';
+        loot.style.left = '0px';
+        loot.style.bottom = (gameArea.clientHeight - 40) + 'px';
+        loot.addEventListener('transitionend', () => {
+          loot.remove();
+          waitingBlock = false;
+          inDialog = false;
+          // restore idle sprite
+          player.style.background = "url('player_idle.png') center/contain no-repeat";
+        }, { once: true });
+      });
+    }px`;
       loot.style.bottom=`${80+posY+playerWidth+10}px`;
       gameArea.appendChild(loot);
-      loot.addEventListener('click',()=>{
+      loot.addEventListener('click', ()=>{
         loot.style.transition='all 0.5s ease-out';
         loot.style.left='0px';
         loot.style.bottom=`${gameArea.clientHeight-40}px`;
-        loot.addEventListener('transitionend',()=>{ loot.remove(); waitingBlock=false; player.style.background="url('player_idle.png') center/contain no-repeat"; },{once:true});
+        loot.addEventListener('transitionend', ()=>{ loot.remove(); waitingBlock=false; player.style.background="url('player_idle.png') center/contain no-repeat"; }, { once:true });
       });
     }
 
@@ -167,17 +192,17 @@
       if(!inDialog && !waitingBlock){
         if(keys['arrowleft']||keys['a']){ posX=Math.max(leftLimit,posX-4); player.classList.add('flipped'); }
         if(keys['arrowright']||keys['d']){ posX=Math.min(rightLimit,posX+4); player.classList.remove('flipped'); }
-        if((keys[' ']||keys['arrowup']||keys['w'])&&!isJumping){ isJumping=true; jumpSpeed=15; }
+        if((keys[' ']||keys['arrowup']||keys['w']) && !isJumping){ isJumping=true; jumpSpeed=15; }
       }
       if(isJumping){ posY+=jumpSpeed; jumpSpeed-=gravity; if(posY<=0){ posY=0; isJumping=false; }}
       player.style.left=`${posX}px`;
       player.style.bottom=`${80+posY}px`;
       const wizardX=(gameArea.clientWidth-playerWidth)/2;
-      promptEl.style.display=!inDialog && !waitingBlock && Math.abs(posX-wizardX)<playerWidth*0.6?'block':'none';
+      promptEl.style.display=!inDialog && !waitingBlock && Math.abs(posX-wizardX)<playerWidth*0.6? 'block' : 'none';
       requestAnimationFrame(gameLoop);
     }
-    document.addEventListener('keydown',e=>{ keys[e.key.toLowerCase()]=true; if(e.key.toLowerCase()==='e' && promptEl.style.display==='block' && !inDialog){ inDialog=true; startGreeting(); }});
-    document.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+    document.addEventListener('keydown', e=>{ keys[e.key.toLowerCase()]=true; if(e.key.toLowerCase()==='e' && promptEl.style.display==='block' && !inDialog){ inDialog=true; startGreeting(); }});
+    document.addEventListener('keyup', e=> keys[e.key.toLowerCase()]=false);
     gameLoop();
   </script>
 </body>
