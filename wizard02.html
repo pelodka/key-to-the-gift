@@ -126,8 +126,17 @@
     const rejectArea       = document.getElementById('rejectArea');
     const approveArea      = document.getElementById('approveArea');
 
-    // start on the ground
-    player.style.bottom = '80px';
+     // ←—— **Spawn logic** for entering from wizard01.html
+    const params    = new URLSearchParams(location.search);
+    const exitSide  = params.get('exit'); // 'left' or 'right'
+    const spawnSide = (exitSide === 'left') ? 'right' : 'left';
+    // define your movement bounds
+    const leftLimit  = 0;
+    const rightLimit = gameArea.clientWidth - player.clientWidth;
+    const spawnX     = (spawnSide === 'left') ? leftLimit : rightLimit;
+    // position the player
+    player.style.left   = spawnX + 'px';
+    player.style.bottom = '80px'; // keep your original ground height
 
     // Puzzle data
     const rejectItems = [
