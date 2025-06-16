@@ -104,25 +104,33 @@
     // Responsive scaling
     function updateScale() {
       const vw = window.innerWidth, vh = window.innerHeight;
-      const scale = Math.min(vw/1920, vh/1200);
+      const scale = Math.min(vw / 1920, vh / 1200);
       const wrap = document.getElementById('wrapper');
       wrap.style.transform = `scale(${scale})`;
-      wrap.style.left = `${(vw - 1920*scale)/2}px`;
-      wrap.style.top  = `${(vh - 1200*scale)/2}px`;
+      wrap.style.left = `${(vw - 1920 * scale) / 2}px`;
+      wrap.style.top  = `${(vh - 1200 * scale) / 2}px`;
     }
     window.addEventListener('resize', updateScale);
     updateScale();
 
     // DOM refs
-    const player     = document.getElementById('player');
-    const gameArea   = document.getElementById('game-container');
-    const prompt     = document.getElementById('prompt');
-    
+    const player             = document.getElementById('player');
+    const gameArea           = document.getElementById('game-container');
+    const prompt             = document.getElementById('prompt');
+    const overlayPuzzle      = document.getElementById('puzzle-overlay');
+    const dialogName         = document.getElementById('dialog-name');
+    const dialogTextPuzzle   = document.getElementById('dialog-text');
+    const blocksDiv          = document.getElementById('blocks');
+    const rejectContainer    = document.getElementById('rejectContainer');
+    const approveContainer   = document.getElementById('approveContainer');
+    const rejectArea         = document.getElementById('rejectArea');
+    const approveArea        = document.getElementById('approveArea');
+
     // Puzzle data
     const rejectItems = [
       'Приказ об установлении дресс-кода для всех работников в любое время года - только черный костюм',
       'Приказ об объявлении выговора работникам, не употреблявшим коньяк Арарат на последнем корпоративе',
-      'Ձայնագրություն Երևանի աշխատակիցներին շտապաբար վերադարձնելու մասին Պետերբուργ։',
+      'Ձայնագրություն Երևանի աշխատակիցներին շտապաբար վերադարձնելու մասին Պետերբուրգ։',
       'Приказ об окончании ковида в связи со срочным переездом',
       'Приказ об использовании eMM в работе всех департаментов'
     ];
@@ -140,22 +148,11 @@
     let interactionFinished = false;
     let waitingBlock = false;
 
-    // Puzzle DOM refs
-    const overlayPuzzle    = document.getElementById('puzzle-overlay');
-    const dialogName       = document.getElementById('dialog-name');
-    const dialogTextPuzzle = document.getElementById('dialog-text');
-    const blocksDiv        = document.getElementById('blocks');
-    const rejectContainer  = document.getElementById('rejectContainer');
-    const approveContainer = document.getElementById('approveContainer');
-    const rejectArea       = document.getElementById('rejectArea');
-    const approveArea      = document.getElementById('approveArea');
-
     // 1) Greeting → Puzzle
     function startDialog() {
       interactionFinished = true;
       overlayPuzzle.style.display = 'block';
       dialogName.textContent = '';
-      // Updated greeting text
       dialogTextPuzzle.textContent = 'Ох, как хорошо что ты здесь, Саша! Все приказы в моей папке перепутались, помоги разобраться!';
       const proceed = () => {
         window.removeEventListener('keydown', proceed);
@@ -179,8 +176,8 @@
         d.addEventListener('dragstart', e => e.dataTransfer.setData('text/plain', d.id));
         blocksDiv.appendChild(d);
       });
-      blocksDiv.style.display = 'grid';
-      rejectContainer.style.display = 'block';
+      blocksDiv.style.display        = 'grid';
+      rejectContainer.style.display  = 'block';
       approveContainer.style.display = 'block';
     }
 
@@ -208,9 +205,9 @@
     // 3) Puzzle Complete
     function finishPuzzle() {
       dialogName.textContent = '';
-      blocksDiv.style.display      = 'none';
-      rejectContainer.style.display  = 'none';
-      approveContainer.style.display = 'none';
+      blocksDiv.style.display         = 'none';
+      rejectContainer.style.display   = 'none';
+      approveContainer.style.display  = 'none';
       dialogTextPuzzle.textContent = 'Фух! Большое спасибо! Вот еще одна подсказка - GOLDEN.';
       const proceed = () => {
         window.removeEventListener('keydown', proceed);
@@ -231,7 +228,7 @@
       block.className = 'collect-block';
       block.style.background = 'red';
       const xPos = (player.offsetLeft + (320 - 60)/2) + 'px';
-      block.style.left = xPos;
+      block.style.left   = xPos;
       block.style.bottom = (80 + 320 + 10) + 'px';
       gameArea.appendChild(block);
       block.addEventListener('click', () => {
@@ -249,25 +246,33 @@
 
     // Movement & game loop
     let keys = {}, isJumping = false, jumpSpeed = 0, gravity = 0.8;
-    function updatePos() {
-      player.style.left = player.offsetLeft + 'px';
-      player.style.bottom = (80 + parseFloat(player.style.bottom) || 0) + 'px';
-    }
     function checkProximity() {
-      const wizardX = (gameArea.clientWidth - 320)/2;
+      const wizardX = (gameArea.clientWidth - 320) / 2;
       prompt.style.display = (!waitingBlock && Math.abs(player.offsetLeft - wizardX) < 192) ? 'block' : 'none';
     }
     function gameLoop() {
       if (!waitingBlock) {
-        if (keys['arrowleft']||keys['a']) { player.style.left = Math.max(0, player.offsetLeft - 4) + 'px'; player.classList.add('flipped'); }
-        if (keys['arrowright']||keys['d']){ player.style.left = Math.min(gameArea.clientWidth-320, player.offsetLeft + 4) + 'px'; player.classList.remove('flipped'); }
-        if ((keys[' ']||keys['arrowup']||keys['w']) && !isJumping) { isJumping = true; jumpSpeed = 15; }
+        if (keys['arrowleft'] || keys['a']) {
+          player.style.left = Math.max(0, player.offsetLeft - 4) + 'px';
+          player.classList.add('flipped');
+        }
+        if (keys['arrowright'] || keys['d']) {
+          player.style.left = Math.min(gameArea.clientWidth - 320, player.offsetLeft + 4) + 'px';
+          player.classList.remove('flipped');
+        }
+        if ((keys[' '] || keys['arrowup'] || keys['w']) && !isJumping) {
+          isJumping = true;
+          jumpSpeed = 15;
+        }
       }
       if (isJumping) {
         const bottom = parseFloat(player.style.bottom) || 0;
         player.style.bottom = bottom + jumpSpeed + 'px';
         jumpSpeed -= gravity;
-        if (bottom + jumpSpeed <= 0) { player.style.bottom = '0px'; isJumping = false;}        
+        if (bottom + jumpSpeed <= 0) {
+          player.style.bottom = '0px';
+          isJumping = false;
+        }
       }
       checkProximity();
       requestAnimationFrame(gameLoop);
@@ -287,7 +292,9 @@
         }
       }
     });
-    document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+    document.addEventListener('keyup', e => {
+      keys[e.key.toLowerCase()] = false;
+    });
   </script>
 </body>
 </html>
