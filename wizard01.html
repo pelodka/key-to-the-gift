@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Wizard 1 Encounter</title>
+  <!-- include shared audio logic -->
+  <script src="audio.js"></script>
   <style>
     /* Base reset */
     html, body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: black; font-family: 'Courier New', monospace; }
@@ -99,7 +101,7 @@
     // State & physics
     let keys = {}, isJumping = false, jumpSpeed = 0, gravity = 0.8;
     let inDialog = false, interactionFinished = false, waitingBlock = false;
-    let puzzleSolved = false;      // ← new flag
+    let puzzleSolved = false;
     let blockColor = 'red';
 
     // Dialog data
@@ -133,7 +135,6 @@
       overlay.style.display = 'block';
       dialogText.textContent = greeting;
       choicesDiv.innerHTML = '';
-      // Delay binding so greeting isn't skipped
       setTimeout(() => {
         const proceed = () => { showQuestion(); cleanupListeners(); };
         const cleanupListeners = () => {
@@ -150,15 +151,10 @@
       inDialog = true;
       overlay.style.display = 'block';
       choicesDiv.innerHTML = '';
-
       if (i === correctIdx) {
         dialogText.textContent = correctTip;
         const onInput = () => {
-          cleanup();
-          overlay.style.display = 'none';
-          inDialog = false;
-          interactionFinished = true;
-          setupCollectible();
+          cleanup(); overlay.style.display = 'none'; inDialog = false; interactionFinished = true; setupCollectible();
         };
         const cleanup = () => {
           window.removeEventListener('keydown', onInput);
@@ -166,13 +162,9 @@
         };
         window.addEventListener('keydown', onInput);
         window.addEventListener('mousedown', onInput);
-
       } else {
         dialogText.textContent = 'Нее, это не совсем то!';
-        const onInput = () => {
-          cleanup();
-          showQuestion();
-        };
+        const onInput = () => { cleanup(); showQuestion(); };
         const cleanup = () => {
           window.removeEventListener('keydown', onInput);
           window.removeEventListener('mousedown', onInput);
@@ -193,97 +185,51 @@
       block.style.left = (posX + (playerWidth - 60)/2) + 'px';
       block.style.bottom = (80 + posY + playerWidth + 10) + 'px';
       gameArea.appendChild(block);
-
       block.addEventListener('click', () => {
         block.style.transition = 'all 0.5s ease-out';
-        block.style.left = '0px';
-        block.style.bottom = (gameArea.clientHeight - 40) + 'px';
+        block.style.left = '0px'; block.style.bottom = (gameArea.clientHeight - 40) + 'px';
         block.addEventListener('transitionend', () => {
-          block.remove();
-          waitingBlock = false;
-          interactionFinished = true;
-          puzzleSolved = true;      // ← mark puzzle solved
-          player.style.background = "url('player_idle.png') center center no-repeat";
-          player.style.backgroundSize = 'contain';
+          block.remove(); waitingBlock = false; interactionFinished = true; puzzleSolved = true; player.style.background = "url('player_idle.png') center center no-repeat"; player.style.backgroundSize = 'contain';
         }, { once: true });
       });
     }
 
-    // Update position
-    function updatePos() {
-      player.style.left = posX + 'px';
-      player.style.bottom = (80 + posY) + 'px';
-    }
-
-    // Show prompt
+    // Update position, proximity, loop
+    function updatePos() { player.style.left = posX + 'px'; player.style.bottom = (80 + posY) + 'px'; }
     function checkProximity() {
       const wizardX = (gameArea.clientWidth - playerWidth)/2;
-      prompt.style.display = (!inDialog && !waitingBlock && Math.abs(posX - wizardX) < playerWidth*0.6)
-                             ? 'block' : 'none';
+      prompt.style.display = (!inDialog && !waitingBlock && Math.abs(posX - wizardX) < playerWidth*0.6) ? 'block' : 'none';
     }
-
-    // Game loop
     function gameLoop() {
       if (!inDialog && !waitingBlock) {
-        if (keys['arrowleft'] || keys['a']) {
-          posX = Math.max(leftLimit, posX - 4);
-          player.classList.add('flipped');
-        }
-        if (keys['arrowright'] || keys['d']) {
-          posX = Math.min(rightLimit, posX + 4);
-          player.classList.remove('flipped');
-        }
-        if ((keys[' '] || keys['arrowup'] || keys['w']) && !isJumping) {
-          isJumping = true;
-          jumpSpeed = 15;
-        }
+        if (keys['arrowleft']||keys['a']) { posX = Math.max(leftLimit, posX-4); player.classList.add('flipped'); }
+        if (keys['arrowright']||keys['d']){ posX = Math.min(rightLimit,posX+4); player.classList.remove('flipped'); }
+        if ((keys[' ']||keys['arrowup']||keys['w']) && !isJumping) { isJumping=true; jumpSpeed=15; window.audio.playJump(); }
       }
-      if (isJumping) {
-        posY += jumpSpeed;
-        jumpSpeed -= gravity;
-        if (posY <= 0) {
-          posY = 0;
-          isJumping = false;
-        }
-      }
-      updatePos();
-      checkProximity();
-      requestAnimationFrame(gameLoop);
+      if (isJumping) { posY+=jumpSpeed; jumpSpeed-=gravity; if(posY<=0){posY=0;isJumping=false;} }
+      updatePos(); checkProximity(); requestAnimationFrame(gameLoop);
     }
-    updatePos();
-    gameLoop();
+    updatePos(); gameLoop();
 
     // Input
     document.addEventListener('keydown', e => {
-      const key = e.key.toLowerCase();
-      keys[key] = true;
-
-      // Interact with wizard/prompt
-      if (key === 'e' && prompt.style.display === 'block') {
-        if (!interactionFinished) {
-          startDialog();
-        } else if (!waitingBlock) {
-          overlay.style.display = 'block';
-          dialogText.textContent = 'Иди же дальше и собери все части ключа!';
-          choicesDiv.innerHTML = '';
-          setTimeout(() => { overlay.style.display = 'none'; }, 2000);
+      const key = e.key.toLowerCase(); keys[key]=true;
+      // Interact
+      if (key==='e' && prompt.style.display==='block') {
+        window.audio.playInteract();
+        if (!interactionFinished) startDialog();
+        else if (!waitingBlock) {
+          overlay.style.display='block'; dialogText.textContent='Иди же дальше и собери все части ключа!'; choicesDiv.innerHTML='';
+          setTimeout(()=>overlay.style.display='none',2000);
         }
       }
-
-      // After puzzle solved, leaving screen triggers transition
+      // Leave
       if (puzzleSolved) {
-        if ((key === 'arrowleft' || key === 'a') && posX <= leftLimit) {
-          window.location.href = `wizard02.html?exit=left`;
-        }
-        if ((key === 'arrowright' || key === 'd') && posX >= rightLimit) {
-          window.location.href = `wizard02.html?exit=right`;
-        }
+        if ((key==='arrowleft'||key==='a')&&posX<=leftLimit) location.href='wizard02.html?exit=left';
+        if ((key==='arrowright'||key==='d')&&posX>=rightLimit) location.href='wizard02.html?exit=right';
       }
     });
-
-    document.addEventListener('keyup', e => {
-      keys[e.key.toLowerCase()] = false;
-    });
+    document.addEventListener('keyup', e => { keys[e.key.toLowerCase()]=false; });
   </script>
 </body>
 </html>
