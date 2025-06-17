@@ -1,6 +1,6 @@
 /* Shared audio handling for Key to the Gift game */
 
-// Background music (looped) - only start on scene2 and beyond
+// Background music (looped)
 const bgm = new Audio('audio/background.mp3');
 bgm.loop = true;
 bgm.volume = 0.5;  // adjust as needed
@@ -8,7 +8,7 @@ bgm.volume = 0.5;  // adjust as needed
 // Sound effect placeholders
 const sfx = {
   jump:       new Audio('audio/jump.mp3'),        // player jump event
-  interact:   new Audio('audio/interact.wav'),   // player interact event
+  interact:   new Audio('audio/interact.mp3'),   // player interact event
   chestOpen:  new Audio('audio/chest-open.wav')  // final chest opened event
 };
 
@@ -22,21 +22,29 @@ function playSfx(name) {
   });
 }
 
-// Kick off bgm on first user interaction, but only on scene2 pages
-function initBgm() {
-  if (!window.location.pathname.includes('scene2.html')) return;
+// Initialize and persist BGM across scenes
+document.addEventListener('DOMContentLoaded', () => {
   const startBgm = () => {
     bgm.play().catch(() => {});
-    window.removeEventListener('click', startBgm);
-    window.removeEventListener('keydown', startBgm);
+    sessionStorage.setItem('bgmStarted', 'true');
   };
-  window.addEventListener('click', startBgm);
-  window.addEventListener('keydown', startBgm);
-}
 
-// Initialize on script load
-document.addEventListener('DOMContentLoaded', () => {
-  initBgm();
+  // If already started in this session, resume immediately
+  if (sessionStorage.getItem('bgmStarted') === 'true') {
+    startBgm();
+    return;
+  }
+
+  // Otherwise, only auto-init on scene2 after first interaction
+  if (window.location.pathname.includes('scene2.html')) {
+    const onFirstInteraction = () => {
+      startBgm();
+      window.removeEventListener('click', onFirstInteraction);
+      window.removeEventListener('keydown', onFirstInteraction);
+    };
+    window.addEventListener('click', onFirstInteraction);
+    window.addEventListener('keydown', onFirstInteraction);
+  }
 });
 
 // Expose API for game logic
