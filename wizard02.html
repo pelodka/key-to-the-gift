@@ -225,7 +225,7 @@
       blocksDiv.style.display        = 'none';
       rejectContainer.style.display  = 'none';
       approveContainer.style.display = 'none';
-      dialogTextPuzzle.textContent   = 'Фух! Большое спасибо! Вот еще одна подсказка - ' +
+      dialogTextPuzzle.innerHTML = 'Фух! Большое спасибо! Вот еще одна подсказка - ' +
   '<span style="color: gold; font-weight: bold;">GOLDEN</span>.';
       const proceed = e => {
         if (e.type === 'keydown' && e.key.toLowerCase() === 'e') return;
