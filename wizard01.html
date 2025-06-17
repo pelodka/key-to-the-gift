@@ -13,7 +13,7 @@
     #game-container { position: relative; width: 100%; height: 100%; background: url('background.png') center center / cover no-repeat; }
     /* Player sprite */
     #player {
-      position: absolute; width: 320px; height: 320px; bottom: 80px; transform-origin: center bottom;
+      position: absolute; width: 480px; height: 480px; bottom: 80px; transform-origin: center bottom;
       background: url('player_idle.png') center center no-repeat;
       background-size: contain; image-rendering: pixelated;
     }
@@ -85,7 +85,7 @@
     const choicesDiv = document.getElementById('choices');
 
     // Movement bounds
-    const playerWidth = 320;
+    const playerWidth = 480;
     const leftLimit   = 0;
     const rightLimit  = gameArea.clientWidth - playerWidth;
 
