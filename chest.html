@@ -118,7 +118,7 @@
     const words         = { black: 'SWARTZ', red: 'BLUTEGE', gold: 'GOLDENE' };
     const correctOrder  = ['black','red','gold'];
 
-    // Start dialog and puzzle
+    // Greeting stays until click or keypress
     const greeting = 'А вот и последняя загадка! Подарки уже совсем рядом!';
     function startDialog() {
       inDialog = true;
@@ -131,7 +131,8 @@
       function proceed() {
         overlay.removeEventListener('click', proceed);
         document.removeEventListener('keydown', proceed);
-        dialogText.textContent = 'Aus der _________ der Knechtschaft durch _________ Schlachten ans _________ Licht der Freiheit.';
+        dialogText.textContent = 
+          'Aus der _________ der Knechtschaft durch _________ Schlachten ans _________ Licht der Freiheit.';
         setupPuzzle();
       }
 
@@ -139,6 +140,7 @@
       document.addEventListener('keydown', proceed, { once: true });
     }
 
+    // Create a pool‐block
     function createBox(color) {
       const box = document.createElement('div');
       box.className     = 'draggable-box';
@@ -147,6 +149,7 @@
       box.style.background = color;
 
       box.addEventListener('dragstart', e => {
+        // clear old feedback
         feedback.textContent = '';
         dragData = { color, from: 'box' };
       });
@@ -155,50 +158,59 @@
     }
 
     function setupPuzzle() {
+      // clear pool and slots
       boxContainer.innerHTML = '';
-      colors.forEach(color => boxContainer.appendChild(createBox(color)));
+      colors.forEach(c => boxContainer.appendChild(createBox(c)));
 
+      // render text with drop targets
       dialogText.innerHTML = `
         Aus der <span class="drop-target" data-index="0"></span>
         der Knechtschaft durch <span class="drop-target" data-index="1"></span>
         Schlachten ans <span class="drop-target" data-index="2"></span>
         Licht der Freiheit.
       `;
+
       document.querySelectorAll('.drop-target').forEach(target => {
         target.draggable = true;
 
+        // dragging out of a slot
         target.addEventListener('dragstart', e => {
-          if (!target.dataset.filled) {
-            e.preventDefault();
-            return;
-          }
+          if (!target.dataset.filled) { e.preventDefault(); return; }
           feedback.textContent = '';
           dragData = {
             color: target.dataset.filled,
             from: 'target',
             index: target.dataset.index
           };
+          // empty the slot immediately
           target.textContent = '';
           delete target.dataset.filled;
           target.style.color = '';
         });
 
+        // allow drops
         target.addEventListener('dragover', e => e.preventDefault());
 
+        // handle drop into slot
         target.addEventListener('drop', e => {
           e.preventDefault();
-          const prevColor = target.dataset.filled;
-          if (prevColor) {
-            boxContainer.appendChild(createBox(prevColor));
+          // if slot was already filled, return that block to pool
+          const prev = target.dataset.filled;
+          if (prev) {
+            boxContainer.appendChild(createBox(prev));
           }
+          // place the dragged block
           const { color, from } = dragData;
-          target.textContent = words[color];
-          target.style.color = color;
-          target.dataset.filled = color;
+          target.textContent       = words[color];
+          target.style.color       = color;
+          target.dataset.filled    = color;
+
+          // remove from pool if coming from there
           if (from === 'box') {
-            const original = boxContainer.querySelector(`.draggable-box[data-color='${color}']`);
-            if (original) original.remove();
+            const orig = boxContainer.querySelector(`.draggable-box[data-color="${color}"]`);
+            if (orig) orig.remove();
           }
+
           checkAllFilled();
           dragData = null;
         });
@@ -206,41 +218,54 @@
     }
 
     function checkAllFilled() {
-      const targets = Array.from(document.querySelectorAll('.drop-target'));
-      if (targets.every(t => t.dataset.filled)) {
-        openBtn.style.display = 'inline-block';
-      } else {
-        openBtn.style.display = 'none';
-      }
+      const all = Array.from(document.querySelectorAll('.drop-target'));
+      openBtn.style.display = all.every(t => t.dataset.filled) ? 'inline-block' : 'none';
     }
 
+    // “ОТКРЫТЬ” logic
     openBtn.addEventListener('click', () => {
       feedback.textContent = '';
-      const order = Array.from(document.querySelectorAll('.drop-target')).map(t => t.dataset.filled);
+      const order = Array.from(document.querySelectorAll('.drop-target'))
+                         .map(t => t.dataset.filled);
       if (order.join() !== correctOrder.join()) {
         feedback.textContent = 'ЧТО-ТО НЕ ТО!';
         return;
       }
+      // correct!
       document.getElementById('wizard-img').src = 'chest_opened.png';
-      dialogText.innerHTML = 'ПОЗДРАВЛЯЕМ С ДНЕМ РОЖДЕНИЯ! ВОТ ТУТ ТВОИ ПОДАРКИ!<br/><a href="#">[Google Drive Link]</a>';
+      dialogText.innerHTML =
+        'ПОЗДРАВЛЯЕМ С ДНЕМ РОЖДЕНИЯ! ВОТ ТУТ ТВОИ ПОДАРКИ!<br/>' +
+        '<a href="#">[Google Drive Link]</a>';
       boxContainer.innerHTML = '';
       openBtn.style.display = 'none';
     });
 
     // Movement & rendering
     function updatePos() {
-      player.style.left = posX + 'px';
+      player.style.left   = posX + 'px';
       player.style.bottom = (80 + posY) + 'px';
     }
     function checkProximity() {
-      const wizardX = (gameArea.clientWidth - playerWidth)/2;
-      prompt.style.display = (!inDialog && Math.abs(posX - wizardX) < playerWidth*0.6) ? 'block' : 'none';
+      const wizardX = (gameArea.clientWidth - playerWidth) / 2;
+      prompt.style.display =
+        !inDialog && Math.abs(posX - wizardX) < playerWidth * 0.6
+          ? 'block'
+          : 'none';
     }
     function gameLoop() {
       if (!inDialog) {
-        if (keys['arrowleft']||keys['a']){ posX = Math.max(leftLimit,posX-4); player.classList.add('flipped'); }
-        if (keys['arrowright']||keys['d']){ posX = Math.min(rightLimit,posX+4); player.classList.remove('flipped'); }
-        if ((keys[' ']||keys['arrowup']||keys['w'])&&!isJumping){ isJumping=true;jumpSpeed=15; }
+        if (keys['arrowleft'] || keys['a']) {
+          posX = Math.max(leftLimit, posX - 4);
+          player.classList.add('flipped');
+        }
+        if (keys['arrowright'] || keys['d']) {
+          posX = Math.min(rightLimit, posX + 4);
+          player.classList.remove('flipped');
+        }
+        if ((keys[' '] || keys['arrowup'] || keys['w']) && !isJumping) {
+          isJumping = true;
+          jumpSpeed = 15;
+        }
       }
       if (isJumping) {
         posY += jumpSpeed;
@@ -260,7 +285,9 @@
         if (!inDialog) startDialog();
       }
     });
-    document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+    document.addEventListener('keyup', e => {
+      keys[e.key.toLowerCase()] = false;
+    });
   </script>
 </body>
 </html>
