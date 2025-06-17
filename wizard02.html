@@ -68,6 +68,19 @@
       display: flex; align-items: center; justify-content: center;
       font-size: 22px; font-weight: bold;
     }
+
+    /* Screenshake animation */
+    @keyframes screenshake {
+      0%   { transform: translate(0, 0); }
+      20%  { transform: translate(-8px, 0); }
+      40%  { transform: translate(8px, 0); }
+      60%  { transform: translate(-8px, 0); }
+      80%  { transform: translate(8px, 0); }
+      100% { transform: translate(0, 0); }
+    }
+    #game-container.shake {
+      animation: screenshake 0.4s ease-in-out;
+    }
   </style>
 </head>
 <body>
@@ -197,7 +210,7 @@
       approveContainer.style.display = 'block';
     }
 
-    // 2) Drag & Drop
+    // 2) Drag & Drop with screenshake on wrong
     [rejectArea, approveArea].forEach(area => {
       area.addEventListener('dragover', e => e.preventDefault());
       area.addEventListener('drop', e => {
@@ -212,6 +225,13 @@
           if (placedCount === totalCount) finishPuzzle();
         } else {
           dialogTextPuzzle.textContent = 'Что на это скажет Марк?';
+
+          // trigger screenshake
+          gameArea.classList.add('shake');
+          gameArea.addEventListener('animationend', () => {
+            gameArea.classList.remove('shake');
+          }, { once: true });
+
           setTimeout(() => dialogTextPuzzle.textContent = '', 3000);
         }
       });
@@ -244,84 +264,10 @@
       player.style.backgroundSize = 'contain';
       const block = document.createElement('div');
       block.className = 'collect-block';
-      // Changed to golden
       block.style.background = 'gold';
       const xPos = (player.offsetLeft + (320 - 60)/2) + 'px';
       block.style.left   = xPos;
       block.style.bottom = (80 + 320 + 10) + 'px';
       gameArea.appendChild(block);
       block.addEventListener('click', () => {
-        block.style.transition = 'all 0.5s ease-out';
-        block.style.left = '0px';
-        block.style.bottom = (gameArea.clientHeight - 40) + 'px';
-        block.addEventListener('transitionend', () => {
-          block.remove();
-          waitingBlock = false;
-          player.style.background = "url('player_idle.png') center center no-repeat";
-          player.style.backgroundSize = 'contain';
-        }, { once: true });
-      });
-    }
-
-    // Movement & game loop (unchanged)…
-    let keys = {}, isJumping = false, jumpSpeed = 0, gravity = 0.8;
-    function checkProximity() {
-      const wizardX = (gameArea.clientWidth - 320) / 2;
-      prompt.style.display = (!waitingBlock && Math.abs(player.offsetLeft - wizardX) < 192) ? 'block' : 'none';
-    }
-    function gameLoop() {
-      if (!waitingBlock) {
-        if (keys['arrowleft']||keys['a']) {
-          player.style.left = Math.max(0, player.offsetLeft - 4) + 'px';
-          player.classList.add('flipped');
-        }
-        if (keys['arrowright']||keys['d']) {
-          player.style.left = Math.min(gameArea.clientWidth-320, player.offsetLeft + 4) + 'px';
-          player.classList.remove('flipped');
-        }
-        if ((keys[' ']||keys['arrowup']||keys['w']) && !isJumping) {
-          isJumping = true; jumpSpeed = 15;
-        }
-      }
-      if (isJumping) {
-        const bottom = parseFloat(player.style.bottom) || 0;
-        player.style.bottom = bottom + jumpSpeed + 'px';
-        jumpSpeed -= gravity;
-        if (bottom + jumpSpeed <= 80) {
-          player.style.bottom = '80px';
-          isJumping = false;
-        }
-      }
-      checkProximity();
-      requestAnimationFrame(gameLoop);
-    }
-    gameLoop();
-
-    // Input
-    document.addEventListener('keydown', e => {
-      keys[e.key.toLowerCase()] = true;
-      if (e.key.toLowerCase() === 'e') {
-        if (!interactionFinished) {
-          startDialog();
-        } else if (!waitingBlock) {
-          overlayPuzzle.style.display = 'block';
-          dialogTextPuzzle.textContent = 'Иди же дальше и собери все части ключа!';
-          setTimeout(() => overlayPuzzle.style.display = 'none', 2000);
-        }
-      }
-      // ←—— Transition to wizard03.html once puzzle is solved
-      if (puzzleSolved) {
-        const posX = player.offsetLeft;
-        if ((e.key.toLowerCase() === 'arrowleft' || e.key.toLowerCase() === 'a') && posX <= leftLimit) {
-          window.location.href = `wizard03.html?exit=left`;
-        }
-        if ((e.key.toLowerCase() === 'arrowright' || e.key.toLowerCase() === 'd') && posX >= rightLimit) {
-          window.location.href = `wizard03.html?exit=right`;
-        }
-      }
-    });
-    document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
-
-  </script>
-</body>
-</html>
+        block.style.transition = 'all 0.5s></script>
