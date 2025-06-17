@@ -57,12 +57,8 @@
       padding: 12px; background: #eee; border: 2px solid #333;
       cursor: grab; user-select: none; font-size: 20px;
     }
-    .drop-areas {
-      display: flex; justify-content: space-between;
-    }
-    .drop-area-container {
-      width: 45%; display: none;
-    }
+    .drop-areas { display: flex; justify-content: space-between; }
+    .drop-area-container { width: 45%; display: none; }
     .drop-area {
       width: 100%; min-height: 80px; border: 3px dashed #333;
       display: flex; align-items: center; justify-content: center;
@@ -78,9 +74,7 @@
       80%  { transform: translate(8px, 0); }
       100% { transform: translate(0, 0); }
     }
-    #game-container.shake {
-      animation: screenshake 0.4s ease-in-out;
-    }
+    #game-container.shake { animation: screenshake 0.4s ease-in-out; }
   </style>
 </head>
 <body>
@@ -109,7 +103,6 @@
           </div>
         </div>
       </div>
-
     </div>
   </div>
 
@@ -139,17 +132,15 @@
     const rejectArea       = document.getElementById('rejectArea');
     const approveArea      = document.getElementById('approveArea');
 
-    // ←—— **Spawn logic** for entering from wizard01.html
+    // Spawn logic for entering from wizard01.html
     const params    = new URLSearchParams(location.search);
-    const exitSide  = params.get('exit'); // 'left' or 'right'
+    const exitSide  = params.get('exit');
     const spawnSide = (exitSide === 'left') ? 'right' : 'left';
-    // define your movement bounds
     const leftLimit  = 0;
     const rightLimit = gameArea.clientWidth - player.clientWidth;
     const spawnX     = (spawnSide === 'left') ? leftLimit : rightLimit;
-    // position the player
     player.style.left   = spawnX + 'px';
-    player.style.bottom = '80px'; // keep your original ground height
+    player.style.bottom = '80px';
 
     // Puzzle data
     const rejectItems = [
@@ -172,16 +163,14 @@
     let placedCount = 0;
     let interactionFinished = false;
     let waitingBlock = false;
-    let puzzleSolved = false;  // ← track when puzzle is done
+    let puzzleSolved = false;
 
     // 1) Greeting → Puzzle
     function startDialog() {
       interactionFinished = true;
       overlayPuzzle.style.display = 'block';
       dialogName.textContent = '';
-      dialogTextPuzzle.textContent = 
-        'Ох, как хорошо что ты здесь, Саша! Все приказы в моей папке перепутались, помоги разобраться!';
-      
+      dialogTextPuzzle.textContent = 'Ох, как хорошо что ты здесь, Саша! Все приказы...';
       const proceed = e => {
         if (e.type === 'keydown' && e.key.toLowerCase() === 'e') return;
         window.removeEventListener('keydown', proceed);
@@ -217,21 +206,14 @@
         e.preventDefault();
         const id    = e.dataTransfer.getData('text/plain');
         const block = document.getElementById(id);
-        const correct = (area === rejectArea)
-          ? rejectSet.has(block.textContent)
-          : !rejectSet.has(block.textContent);
+        const correct = (area === rejectArea) ? rejectSet.has(block.textContent) : !rejectSet.has(block.textContent);
         if (correct) {
           block.remove(); placedCount++;
           if (placedCount === totalCount) finishPuzzle();
         } else {
           dialogTextPuzzle.textContent = 'Что на это скажет Марк?';
-
-          // trigger screenshake
           gameArea.classList.add('shake');
-          gameArea.addEventListener('animationend', () => {
-            gameArea.classList.remove('shake');
-          }, { once: true });
-
+          gameArea.addEventListener('animationend', () => gameArea.classList.remove('shake'), { once: true });
           setTimeout(() => dialogTextPuzzle.textContent = '', 3000);
         }
       });
@@ -240,18 +222,16 @@
     // 3) Puzzle Complete
     function finishPuzzle() {
       dialogName.textContent = '';
-      blocksDiv.style.display         = 'none';
-      rejectContainer.style.display   = 'none';
-      approveContainer.style.display  = 'none';
-      dialogTextPuzzle.textContent = 'Фух! Большое спасибо! Вот еще одна подсказка - GOLDEN.';
-      
+      blocksDiv.style.display        = 'none';
+      rejectContainer.style.display  = 'none';
+      approveContainer.style.display = 'none';
+      dialogTextPuzzle.textContent   = 'Фух! Большое спасибо!';
       const proceed = e => {
         if (e.type === 'keydown' && e.key.toLowerCase() === 'e') return;
         window.removeEventListener('keydown', proceed);
         window.removeEventListener('mousedown', proceed);
         overlayPuzzle.style.display = 'none';
-        setupCollectible();
-        puzzleSolved = true;  // ← mark puzzle as solved
+        setupCollectible(); puzzleSolved = true;
       };
       window.addEventListener('keydown', proceed);
       window.addEventListener('mousedown', proceed);
@@ -262,12 +242,44 @@
       waitingBlock = true;
       player.style.background = "url('player_hands.png') center center no-repeat";
       player.style.backgroundSize = 'contain';
-      const block = document.createElement('div');
-      block.className = 'collect-block';
+      const block = document.createElement('div'); block.className = 'collect-block';
       block.style.background = 'gold';
       const xPos = (player.offsetLeft + (320 - 60)/2) + 'px';
-      block.style.left   = xPos;
-      block.style.bottom = (80 + 320 + 10) + 'px';
-      gameArea.appendChild(block);
+      block.style.left = xPos; block.style.bottom = (80 + 320 + 10) + 'px'; gameArea.appendChild(block);
       block.addEventListener('click', () => {
-        block.style.transition = 'all 0.5s></script>
+        block.style.transition = 'all 0.5s ease-out';
+        block.style.left = '0px'; block.style.bottom = (gameArea.clientHeight - 40) + 'px';
+        block.addEventListener('transitionend', () => {
+          block.remove(); waitingBlock = false;
+          player.style.background = "url('player_idle.png') center center no-repeat";
+          player.style.backgroundSize = 'contain';
+        }, { once: true });
+      });
+    }
+
+    // Movement & game loop
+    let keys={}, isJumping=false, jumpSpeed=0, gravity=0.8;
+    function checkProximity() {
+      const wizardX = (gameArea.clientWidth-320)/2;
+      prompt.style.display = (!waitingBlock && Math.abs(player.offsetLeft-wizardX)<192)?'block':'none';
+    }
+    function gameLoop(){
+      if(!waitingBlock){
+        if(keys['arrowleft']||keys['a']){player.style.left=Math.max(0,player.offsetLeft-4)+'px';player.classList.add('flipped');}
+        if(keys['arrowright']||keys['d']){player.style.left=Math.min(gameArea.clientWidth-320,player.offsetLeft+4)+'px';player.classList.remove('flipped');}
+        if((keys[' ']||keys['arrowup']||keys['w'])&&!isJumping){isJumping=true;jumpSpeed=15;}
+      }
+      if(isJumping){const bottom=parseFloat(player.style.bottom)||0;player.style.bottom=bottom+jumpSpeed+'px';jumpSpeed-=gravity;if(bottom+jumpSpeed<=80){player.style.bottom='80px';isJumping=false;}}
+      checkProximity();requestAnimationFrame(gameLoop);
+    }
+    gameLoop();
+
+    // Input & scene transition
+    document.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;
+      if(e.key.toLowerCase()==='e'){if(!interactionFinished)startDialog();else if(!waitingBlock){overlayPuzzle.style.display='block';dialogTextPuzzle.textContent='Иди же дальше!';setTimeout(()=>overlayPuzzle.style.display='none',2000);}}
+      if(puzzleSolved){const posX=player.offsetLeft;if((e.key.toLowerCase()==='arrowleft'||e.key.toLowerCase()==='a')&&posX<=leftLimit)location.href='wizard03.html?exit=left';if((e.key.toLowerCase()==='arrowright'||e.key.toLowerCase()==='d')&&posX>=rightLimit)location.href='wizard03.html?exit=right';}}
+    );
+    document.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
+  </script>
+</body>
+</html>
