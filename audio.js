@@ -7,7 +7,7 @@ bgm.volume = 0.5;  // adjust as needed
 
 // Sound effect placeholders
 const sfx = {
-  jump:       new Audio('audio/jump.wav'),        // player jump event
+  jump:       new Audio('audio/jump.mp3'),        // player jump event
   interact:   new Audio('audio/interact.wav'),   // player interact event
   chestOpen:  new Audio('audio/chest-open.wav')  // final chest opened event
 };
