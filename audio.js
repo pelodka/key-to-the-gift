@@ -9,7 +9,7 @@ bgm.volume = 0.5;
 const sfxPaths = {
   jump:      'audio/jump.mp3',
   interact:  'audio/interact.mp3',
-  chestOpen: 'audio/chest_open.mp3'   // updated file name for chest open sound
+  chestOpen: 'audio/chest_open.mp3'
 };
 
 // 3) Cache for instantiated Audio objects
@@ -30,28 +30,46 @@ function playSfx(name) {
   sound.play().catch(() => {});
 }
 
-// 5) Initialize and persist BGM across scenes
+// 5) Initialize and persist BGM across scenes with continuous playback
+const BGM_STARTED_KEY = 'bgmStarted';
+const BGM_START_TIME_KEY = 'bgmStartTime';
+
 document.addEventListener('DOMContentLoaded', () => {
+  const now = Date.now();
+  const startTimestamp = parseInt(sessionStorage.getItem(BGM_START_TIME_KEY), 10);
+  const hasStarted = sessionStorage.getItem(BGM_STARTED_KEY) === 'true';
+
+  // Function to start and record BGM
   const startBgm = () => {
+    sessionStorage.setItem(BGM_STARTED_KEY, 'true');
+    sessionStorage.setItem(BGM_START_TIME_KEY, now.toString());
+    bgm.currentTime = 0;
     bgm.play().catch(() => {});
-    sessionStorage.setItem('bgmStarted', 'true');
   };
 
-  // Resume immediately if already started
-  if (sessionStorage.getItem('bgmStarted') === 'true') {
-    startBgm();
-    return;
-  }
-
-  // Otherwise, only auto-init on scene2 after first interaction
-  if (window.location.pathname.includes('scene2.html')) {
-    const onFirst = () => {
-      startBgm();
-      window.removeEventListener('click', onFirst);
-      window.removeEventListener('keydown', onFirst);
-    };
-    window.addEventListener('click', onFirst);
-    window.addEventListener('keydown', onFirst);
+  if (!hasStarted) {
+    // only trigger on scene2 first interaction
+    if (window.location.pathname.includes('scene2.html')) {
+      const onFirst = () => {
+        startBgm();
+        window.removeEventListener('click', onFirst);
+        window.removeEventListener('keydown', onFirst);
+      };
+      window.addEventListener('click', onFirst);
+      window.addEventListener('keydown', onFirst);
+    }
+  } else {
+    // already started: resume at elapsed position
+    const elapsed = (now - (isNaN(startTimestamp) ? now : startTimestamp)) / 1000;
+    bgm.addEventListener('loadedmetadata', () => {
+      bgm.currentTime = bgm.duration ? elapsed % bgm.duration : 0;
+      bgm.play().catch(() => {});
+    });
+    // In case metadata already loaded
+    if (bgm.readyState >= 1) {
+      bgm.currentTime = bgm.duration ? elapsed % bgm.duration : 0;
+      bgm.play().catch(() => {});
+    }
   }
 });
 
