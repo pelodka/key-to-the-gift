@@ -4,6 +4,8 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Scene2 - Key to the Gift</title>
+  <!-- include shared audio logic -->
+  <script src="audio.js"></script>
   <style>
     /* Reset & base */
     html, body {
@@ -203,6 +205,8 @@
         if ((keys[' '] || keys['spacebar']) && !isJumping) {
           isJumping = true;
           jumpSpeed = 15;
+          // play jump SFX
+          window.audio.playJump();
         }
       }
 
