@@ -132,7 +132,7 @@
         overlay.removeEventListener('click', proceed);
         document.removeEventListener('keydown', proceed);
         dialogText.textContent =
-          'Aus der _________ der Knechtschaft durch _________ Schlachten ans _________ Licht der Freiheit.';
+          'Aus der _________ der Knechtschaft через _________ Schlachten ans _________ Licht der Freiheit.';
         setupPuzzle();
       }
 
@@ -164,7 +164,7 @@
       // render text with drop targets
       dialogText.innerHTML = `
         Aus der <span class="drop-target" data-index="0"></span>
-        der Knechtschaft durch <span class="drop-target" data-index="1"></span>
+        der Knechtschaft через <span class="drop-target" data-index="1"></span>
         Schlachten ans <span class="drop-target" data-index="2"></span>
         Licht der Freiheit.
       `;
@@ -179,36 +179,29 @@
           const color = target.dataset.filled;
           dragData = { color, from: 'target', index: target.dataset.index };
 
-          // create a colored drag-image
+          // colored drag ghost
           const dragImg = document.createElement('div');
-          dragImg.style.width  = '60px';
-          dragImg.style.height = '40px';
-          dragImg.style.background = color;
-          dragImg.style.position   = 'absolute';
-          dragImg.style.top        = '-1000px';
+          dragImg.style.width       = '60px';
+          dragImg.style.height      = '40px';
+          dragImg.style.background  = color;
+          dragImg.style.position    = 'absolute';
+          dragImg.style.top         = '-1000px';
           document.body.appendChild(dragImg);
           e.dataTransfer.setDragImage(dragImg, 30, 20);
-          // remove the temp image right after dragstart
           setTimeout(() => document.body.removeChild(dragImg), 0);
 
-          // now clear the slot
+          // clear the slot
           target.textContent = '';
           delete target.dataset.filled;
           target.style.color = '';
         });
 
-        // allow drops
+        // if drop into slot
         target.addEventListener('dragover', e => e.preventDefault());
-
-        // handle drop into slot
         target.addEventListener('drop', e => {
           e.preventDefault();
-          // return existing block if any
           const prev = target.dataset.filled;
-          if (prev) {
-            boxContainer.appendChild(createBox(prev));
-          }
-          // place the dragged block
+          if (prev) boxContainer.appendChild(createBox(prev));
           const { color, from } = dragData;
           target.textContent    = words[color];
           target.style.color    = color;
@@ -219,6 +212,15 @@
           }
           checkAllFilled();
           dragData = null;
+        });
+
+        // return to pool if dropped outside any slot
+        target.addEventListener('dragend', e => {
+          if (dragData && dragData.from === 'target') {
+            boxContainer.appendChild(createBox(dragData.color));
+            checkAllFilled();
+            dragData = null;
+          }
         });
       });
     }
