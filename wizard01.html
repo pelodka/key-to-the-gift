@@ -13,13 +13,13 @@
     #game-container { position: relative; width: 100%; height: 100%; background: url('background.png') center center / cover no-repeat; }
     /* Player sprite */
     #player {
-      position: absolute; width: 480px; height: 480px; bottom: 80px; transform-origin: center bottom;
+      position: absolute; width: 320px; height: 320px; bottom: 80px; transform-origin: center bottom;
       background: url('player_idle.png') center center no-repeat;
       background-size: contain; image-rendering: pixelated;
     }
     #player.flipped { transform: scaleX(-1); }
     /* Wizard */
-    #wizard { position: absolute; width: 400px; height: 400px; bottom: 80px; left: 50%; transform: translateX(-50%); pointer-events: none; }
+    #wizard { position: absolute; width: 300px; height: 300px; bottom: 80px; left: 50%; transform: translateX(-50%); pointer-events: none; }
     #wizard-img { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
     /* Prompt */
     #prompt {
@@ -85,7 +85,7 @@
     const choicesDiv = document.getElementById('choices');
 
     // Movement bounds
-    const playerWidth = 480;
+    const playerWidth = 320;
     const leftLimit   = 0;
     const rightLimit  = gameArea.clientWidth - playerWidth;
 
