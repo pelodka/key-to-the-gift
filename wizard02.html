@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Wizard Encounter with Document Sorting Puzzle</title>
+  <script src="audio.js">
   <style>
     /* Base reset */
     html, body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: black; font-family: 'Courier New', monospace; }
@@ -268,7 +269,7 @@
       if(!waitingBlock){
         if(keys['arrowleft']||keys['a']){player.style.left=Math.max(0,player.offsetLeft-4)+'px';player.classList.add('flipped');}
         if(keys['arrowright']||keys['d']){player.style.left=Math.min(gameArea.clientWidth-320,player.offsetLeft+4)+'px';player.classList.remove('flipped');}
-        if((keys[' ']||keys['arrowup']||keys['w'])&&!isJumping){isJumping=true;jumpSpeed=15;}
+        if((keys[' ']||keys['arrowup']||keys['w'])&&!isJumping){isJumping=true;jumpSpeed=15;window.audio.playJump();}
       }
       if(isJumping){const bottom=parseFloat(player.style.bottom)||0;player.style.bottom=bottom+jumpSpeed+'px';jumpSpeed-=gravity;if(bottom+jumpSpeed<=80){player.style.bottom='80px';isJumping=false;}}
       checkProximity();requestAnimationFrame(gameLoop);
@@ -277,7 +278,7 @@
 
     // Input & scene transition
     document.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;
-      if(e.key.toLowerCase()==='e'){if(!interactionFinished)startDialog();else if(!waitingBlock){overlayPuzzle.style.display='block';dialogTextPuzzle.textContent='Иди же дальше!';setTimeout(()=>overlayPuzzle.style.display='none',2000);}}
+      if(e.key.toLowerCase()==='e'){ window.audio.playInteract(); if(!interactionFinished)startDialog();else if(!waitingBlock){overlayPuzzle.style.display='block';dialogTextPuzzle.textContent='Иди же дальше!';setTimeout(()=>overlayPuzzle.style.display='none',2000);}}
       if(puzzleSolved){const posX=player.offsetLeft;if((e.key.toLowerCase()==='arrowleft'||e.key.toLowerCase()==='a')&&posX<=leftLimit)location.href='wizard03.html?exit=left';if((e.key.toLowerCase()==='arrowright'||e.key.toLowerCase()==='d')&&posX>=rightLimit)location.href='wizard03.html?exit=right';}}
     );
     document.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
