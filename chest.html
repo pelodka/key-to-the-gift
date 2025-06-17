@@ -131,7 +131,7 @@
       function proceed() {
         overlay.removeEventListener('click', proceed);
         document.removeEventListener('keydown', proceed);
-        dialogText.textContent = 
+        dialogText.textContent =
           'Aus der _________ der Knechtschaft durch _________ Schlachten ans _________ Licht der Freiheit.';
         setupPuzzle();
       }
@@ -149,7 +149,6 @@
       box.style.background = color;
 
       box.addEventListener('dragstart', e => {
-        // clear old feedback
         feedback.textContent = '';
         dragData = { color, from: 'box' };
       });
@@ -177,12 +176,22 @@
         target.addEventListener('dragstart', e => {
           if (!target.dataset.filled) { e.preventDefault(); return; }
           feedback.textContent = '';
-          dragData = {
-            color: target.dataset.filled,
-            from: 'target',
-            index: target.dataset.index
-          };
-          // empty the slot immediately
+          const color = target.dataset.filled;
+          dragData = { color, from: 'target', index: target.dataset.index };
+
+          // create a colored drag-image
+          const dragImg = document.createElement('div');
+          dragImg.style.width  = '60px';
+          dragImg.style.height = '40px';
+          dragImg.style.background = color;
+          dragImg.style.position   = 'absolute';
+          dragImg.style.top        = '-1000px';
+          document.body.appendChild(dragImg);
+          e.dataTransfer.setDragImage(dragImg, 30, 20);
+          // remove the temp image right after dragstart
+          setTimeout(() => document.body.removeChild(dragImg), 0);
+
+          // now clear the slot
           target.textContent = '';
           delete target.dataset.filled;
           target.style.color = '';
@@ -194,23 +203,20 @@
         // handle drop into slot
         target.addEventListener('drop', e => {
           e.preventDefault();
-          // if slot was already filled, return that block to pool
+          // return existing block if any
           const prev = target.dataset.filled;
           if (prev) {
             boxContainer.appendChild(createBox(prev));
           }
           // place the dragged block
           const { color, from } = dragData;
-          target.textContent       = words[color];
-          target.style.color       = color;
-          target.dataset.filled    = color;
-
-          // remove from pool if coming from there
+          target.textContent    = words[color];
+          target.style.color    = color;
+          target.dataset.filled = color;
           if (from === 'box') {
             const orig = boxContainer.querySelector(`.draggable-box[data-color="${color}"]`);
             if (orig) orig.remove();
           }
-
           checkAllFilled();
           dragData = null;
         });
@@ -231,7 +237,6 @@
         feedback.textContent = 'ЧТО-ТО НЕ ТО!';
         return;
       }
-      // correct!
       document.getElementById('wizard-img').src = 'chest_opened.png';
       dialogText.innerHTML =
         'ПОЗДРАВЛЯЕМ С ДНЕМ РОЖДЕНИЯ! ВОТ ТУТ ТВОИ ПОДАРКИ!<br/>' +
