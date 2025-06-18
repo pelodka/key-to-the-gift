@@ -160,6 +160,7 @@
     function setupPuzzle() {
       boxContainer.innerHTML = '';
       colors.forEach(c => boxContainer.appendChild(createBox(c)));
+      openBtn.style.display = 'none';
 
       dialogText.innerHTML = `
         Aus der <span class="drop-target" data-index="0"></span>
@@ -232,6 +233,7 @@
       feedback.textContent = '';
       const order = Array.from(document.querySelectorAll('.drop-target'))
                          .map(t => t.dataset.filled);
+
       if (order.join() !== correctOrder.join()) {
         feedback.textContent = 'ЧТО-ТО НЕ ТО!';
         return;
@@ -246,16 +248,21 @@
       // immediately flip the sprite
       document.getElementById('wizard-img').src = 'chest_opened.png';
 
-      // hide the “ОТКРЫТЬ” button
-      openBtn.style.display = 'none';
+      // 3) hide the puzzle overlay so we see chest & player
+      overlay.style.display = 'none';
+      inDialog = false;
 
-      // 3) after chest-open ends, show dialog text & play victory
+      // 4) after chest-open finishes, show final dialog & play victory
       if (chestAudio) {
         chestAudio.addEventListener('ended', () => {
+          overlay.style.display = 'block';
+          inDialog = true;
           dialogText.innerHTML =
             'ПОЗДРАВЛЯЕМ С ДНЕМ РОЖДЕНИЯ! ВОТ ТУТ ТВОИ ПОДАРКИ!<br/>' +
             '<a href="#">[Google Drive Link]</a>';
           boxContainer.innerHTML = '';
+          openBtn.style.display = 'none';
+          feedback.textContent = '';
           window.audio.playVictory();
         });
       }
@@ -311,9 +318,7 @@
     document.addEventListener('keyup', e => {
       const key = e.key.toLowerCase();
       // only play interact SFX on E
-      if (key === 'e') {
-        window.audio.playInteract();
-      }
+      if (key === 'e') window.audio.playInteract();
       keys[key] = false;
     });
   </script>
