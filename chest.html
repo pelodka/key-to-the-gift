@@ -133,7 +133,7 @@
         overlay.removeEventListener('click', proceed);
         document.removeEventListener('keydown', proceed);
         dialogText.textContent =
-          'Aus der _________ der Knechtschaft через _________ Schlachten ans _________ Licht der Freiheit.';
+          'Aus der _________ der Knechtschaft durch _________ Schlachten ans _________ Licht der Freiheit.';
         setupPuzzle();
       }
 
@@ -158,11 +158,9 @@
     }
 
     function setupPuzzle() {
-      // clear pool and slots
       boxContainer.innerHTML = '';
       colors.forEach(c => boxContainer.appendChild(createBox(c)));
 
-      // render text with drop targets
       dialogText.innerHTML = `
         Aus der <span class="drop-target" data-index="0"></span>
         der Knechtschaft через <span class="drop-target" data-index="1"></span>
@@ -180,7 +178,6 @@
           const color = target.dataset.filled;
           dragData = { color, from: 'target', index: target.dataset.index };
 
-          // colored drag ghost
           const dragImg = document.createElement('div');
           dragImg.style.width       = '60px';
           dragImg.style.height      = '40px';
@@ -191,7 +188,6 @@
           e.dataTransfer.setDragImage(dragImg, 30, 20);
           setTimeout(() => document.body.removeChild(dragImg), 0);
 
-          // clear the slot
           target.textContent = '';
           delete target.dataset.filled;
           target.style.color = '';
@@ -240,22 +236,29 @@
         feedback.textContent = 'ЧТО-ТО НЕ ТО!';
         return;
       }
+
       // 1) Stop the BGM
       window.audio.stopBgm();
 
-     // 2) Play chest-open SFX, then queue victory fanfare
+      // 2) Play chest-open SFX
       const chestAudio = window.audio.playChestOpen();
+
+      // immediately flip the sprite
+      document.getElementById('wizard-img').src = 'chest_opened.png';
+
+      // hide the “ОТКРЫТЬ” button
+      openBtn.style.display = 'none';
+
+      // 3) after chest-open ends, show dialog text & play victory
       if (chestAudio) {
         chestAudio.addEventListener('ended', () => {
+          dialogText.innerHTML =
+            'ПОЗДРАВЛЯЕМ С ДНЕМ РОЖДЕНИЯ! ВОТ ТУТ ТВОИ ПОДАРКИ!<br/>' +
+            '<a href="#">[Google Drive Link]</a>';
+          boxContainer.innerHTML = '';
           window.audio.playVictory();
         });
       }
-      document.getElementById('wizard-img').src = 'chest_opened.png';
-      dialogText.innerHTML =
-        'ПОЗДРАВЛЯЕМ С ДНЕМ РОЖДЕНИЯ! ВОТ ТУТ ТВОИ ПОДАРКИ!<br/>' +
-        '<a href="#">[Google Drive Link]</a>';
-      boxContainer.innerHTML = '';
-      openBtn.style.display = 'none';
     });
 
     // Movement & rendering
@@ -298,15 +301,20 @@
     updatePos();
     gameLoop();
 
+    // key listeners
     document.addEventListener('keydown', e => {
-       keys[e.key.toLowerCase()] = true;
+      keys[e.key.toLowerCase()] = true;
       if (e.key.toLowerCase() === 'e' && prompt.style.display === 'block') {
         if (!inDialog) startDialog();
       }
     });
     document.addEventListener('keyup', e => {
-      window.audio.playInteract();
-      keys[e.key.toLowerCase()] = false;
+      const key = e.key.toLowerCase();
+      // only play interact SFX on E
+      if (key === 'e') {
+        window.audio.playInteract();
+      }
+      keys[key] = false;
     });
   </script>
 </body>
