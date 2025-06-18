@@ -1,69 +1,39 @@
-html
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Czech Wizard</title>
+  <title>Czech Wizard — Tax Puzzle</title>
   <script src="audio.js"></script>
   <style>
-    /* Base reset */
-    html, body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: black; font-family: 'Courier New', monospace; }
-    /* Wrapper scaling */
-    #wrapper { position: absolute; top: 0; left: 0; width: 1920px; height: 1200px; transform-origin: top left; }
-    /* Background */
-    #game-container { position: relative; width: 100%; height: 100%; background: url('background.png') center center / cover no-repeat; }
-    /* Player sprite */
-    #player {
-      position: absolute; width: 320px; height: 320px; bottom: 80px; transform-origin: center bottom;
-      background: url('player_idle.png') center center no-repeat;
-      background-size: contain; image-rendering: pixelated;
-    }
-    #player.flipped { transform: scaleX(-1); }
-    /* Wizard */
-    #wizard { position: absolute; width: 300px; height: 300px; bottom: 80px; left: 50%; transform: translateX(-50%); pointer-events: none; }
-    #wizard-img { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
-    /* Prompt */
-    #prompt {
-      position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%);
-      background: white; color: black; padding: 8px 12px; border: 4px solid red; border-radius: 4px;
-      font-size: 28px; font-family: 'Arial Black'; text-transform: uppercase;
-      pointer-events: none; display: none; white-space: nowrap;
-    }
-    /* Puzzle-specific styles */
+    html, body { margin:0; padding:0; width:100vw; height:100vh; overflow:hidden; background:black; font-family:'Courier New', monospace; }
+    #wrapper { position:absolute; top:0; left:0; width:1920px; height:1200px; transform-origin:top left; }
+    #game-container { position:relative; width:100%; height:100%; background:url('background.png') center/cover no-repeat; }
+    #player { position:absolute; width:320px; height:320px; bottom:80px; background:url('player_idle.png') center/contain no-repeat; image-rendering:pixelated; }
+    #player.flipped { transform:scaleX(-1); }
+    #player.hands { background:url('player_hands.png') center/contain no-repeat; }
+    .collect-block { position:absolute; width:60px; height:40px; background:black; cursor:pointer; image-rendering:pixelated; }
+    #wizard { position:absolute; width:300px; height:300px; bottom:80px; left:50%; transform:translateX(-50%); pointer-events:none; }
+    #wizard img { width:100%; height:100%; image-rendering:pixelated; }
+    #prompt { position:absolute; bottom:calc(100% + 10px); left:50%; transform:translateX(-50%);
+      background:white; color:black; padding:8px 12px; border:4px solid red; border-radius:4px;
+      font-size:28px; font-family:'Arial Black'; text-transform:uppercase; pointer-events:none; display:none; }
     #puzzle-overlay {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.7); display: none; z-index: 100;
+      position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:none; z-index:100;
     }
     #puzzle-box {
-      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
-      background: white; padding: 32px; border: 4px solid black;
-      width: 800px; max-width: 90vw; font-family: 'Courier New', monospace;
+      position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+      background:white; padding:32px; border:4px solid black; width:800px; max-width:90vw; font-family:'Courier New', monospace;
     }
-    #puzzle-box #dialog-name {
-      text-align: center; font-size: 28px; font-weight: bold; margin-bottom: 16px;
-    }
-    #puzzle-box #dialog-text {
-      text-align: center; font-size: 24px; margin-bottom: 24px;
-    }
-    .blocks-container {
-      display: grid; grid-template-columns: 1fr; gap: 8px; max-height: 300px; overflow-y: auto; margin-bottom: 24px;
-    }
-    .block {
-      padding: 12px; background: #eee; border: 2px solid #333;
-      cursor: grab; user-select: none; font-size: 20px;
-    }
-    .drop-areas {
-      display: flex; justify-content: space-between; flex-wrap: wrap;
-    }
-    .drop-area-container {
-      width: 45%; margin: 5px 0;
-    }
+    #dialog-name { text-align:center; font-size:28px; font-weight:bold; margin-bottom:16px; }
+    #dialog-text { text-align:center; font-size:24px; margin-bottom:24px; }
+    .blocks-container { display:grid; grid-template-columns:1fr; gap:8px; max-height:300px; overflow-y:auto; margin-bottom:24px; }
+    .block { padding:12px; background:#eee; border:2px solid #333; cursor:grab; user-select:none; font-size:20px; }
+    .drop-areas { display:flex; justify-content:space-between; flex-wrap:wrap; }
+    .drop-area-container { width:45%; margin:5px 0; display:none; }
     .drop-area {
-      width: 100%; min-height: 80px; border: 3px dashed #333;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px; font-weight: bold;
-      user-select: none;
+      width:100%; min-height:80px; border:3px dashed #333; display:flex; align-items:center; justify-content:center;
+      font-size:22px; font-weight:bold; user-select:none;
     }
   </style>
 </head>
@@ -72,228 +42,202 @@ html
     <div id="game-container">
       <div id="player"></div>
       <div id="wizard">
-        <img id="wizard-img" src="wizard3.png" alt="Wizard" />
+        <img src="wizard3.png" alt="Wizard" />
         <div id="prompt">Press E</div>
       </div>
-      <div id="ground"></div>
 
-      <!-- Puzzle Container -->
+      <!-- TAX Puzzle Overlay -->
       <div id="puzzle-overlay">
         <div id="puzzle-box">
           <div id="dialog-name"></div>
           <div id="dialog-text"></div>
           <div id="blocks" class="blocks-container"></div>
           <div class="drop-areas">
-            <div id="germanyContainer" class="drop-area-container">
-              <div id="germanyArea" class="drop-area">ГЕРМАНИЯ</div>
-            </div>
-            <div id="russiaContainer" class="drop-area-container">
-              <div id="russiaArea" class="drop-area">РОССИЯ</div>
-            </div>
-            <div id="portugalContainer" class="drop-area-container">
-              <div id="portugalArea" class="drop-area">ПОРТУГАЛИЯ</div>
-            </div>
-            <div id="armeniaContainer" class="drop-area-container">
-              <div id="armeniaArea" class="drop-area">АРМЕНИЯ</div>
-            </div>
+            <div class="drop-area-container"><div id="germanyArea" class="drop-area">ГЕРМАНИЯ</div></div>
+            <div class="drop-area-container"><div id="russiaArea"   class="drop-area">РОССИЯ</div></div>
+            <div class="drop-area-container"><div id="portugalArea"class="drop-area">ПОРТУГАЛИЯ</div></div>
+            <div class="drop-area-container"><div id="armeniaArea" class="drop-area">АРМЕНИЯ</div></div>
           </div>
         </div>
       </div>
-
     </div>
   </div>
 
   <script>
-    // Responsive scaling
+    // Scaling
     function updateScale() {
-      const vw = window.innerWidth, vh = window.innerHeight;
-      const scale = Math.min(vw / 1920, vh / 1200);
-      const wrap = document.getElementById('wrapper');
-      wrap.style.transform = `scale(${scale})`;
-      wrap.style.left = `${(vw - 1920 * scale) / 2}px`;
-      wrap.style.top  = `${(vh - 1200 * scale) / 2}px`;
+      const vw=innerWidth, vh=innerHeight, scale=Math.min(vw/1920, vh/1200);
+      const w=document.getElementById('wrapper');
+      w.style.transform = `scale(${scale})`;
+      w.style.left = `${(vw-1920*scale)/2}px`;
+      w.style.top  = `${(vh-1200*scale)/2}px`;
     }
-    window.addEventListener('resize', updateScale);
+    addEventListener('resize', updateScale);
     updateScale();
 
-    // DOM refs
-    const player           = document.getElementById('player');
-    const gameArea         = document.getElementById('game-container');
-    const prompt           = document.getElementById('prompt');
-    const overlayPuzzle    = document.getElementById('puzzle-overlay');
-    const dialogName       = document.getElementById('dialog-name');
-    const dialogTextPuzzle = document.getElementById('dialog-text');
-    const blocksDiv        = document.getElementById('blocks');
-
-    // Spawn logic
-    const params    = new URLSearchParams(location.search);
-    const exitSide  = params.get('exit');
-    const spawnSide = (exitSide === 'left') ? 'right' : 'left';
-    const leftLimit  = 0;
-    const rightLimit = gameArea.clientWidth - player.clientWidth;
-    const spawnX     = (spawnSide === 'left') ? leftLimit : rightLimit;
-    player.style.left   = spawnX + 'px';
-    player.style.bottom = '80px';
-
-    // --- TAX PUZZLE DATA ---
-    const taxCases = [
-      { text: 'Вы купили акции и продали через год без налога', country: 'ПОРТУГАЛИЯ' },
-      { text: 'Не указан доход из Грузии — штраф 10k', country: 'ГЕРМАНИЯ' },
-      { text: 'Работа за границей облагается налогом с первого дня', country: 'АРМЕНИЯ' },
-      { text: 'Имущественный вычет за покупку квартиры', country: 'РОССИЯ' }
+    // Refs & state
+    const player = document.getElementById('player'),
+          gameArea = document.getElementById('game-container'),
+          prompt = document.getElementById('prompt'),
+          overlay = document.getElementById('puzzle-overlay'),
+          nameEl = document.getElementById('dialog-name'),
+          textEl = document.getElementById('dialog-text'),
+          blocksDiv = document.getElementById('blocks');
+    const cases = [
+      {text:'Вы купили акции и продали через год без налога', country:'ПОРТУГАЛИЯ'},
+      {text:'Не указан доход из Грузии — штраф 10k',           country:'ГЕРМАНИЯ'},
+      {text:'Работа за границей облагается налогом с первого дня', country:'АРМЕНИЯ'},
+      {text:'Имущественный вычет за покупку квартиры',          country:'РОССИЯ'}
     ];
-    const countryZones = {
-      germanyArea: 'ГЕРМАНИЯ',
-      russiaArea:   'РОССИЯ',
-      portugalArea: 'ПОРТУГАЛИЯ',
-      armeniaArea:  'АРМЕНИЯ'
+    const zones = {
+      germanyArea:'ПОРТУГАЛИЯ', russiaArea:'РОССИЯ',
+      portugalArea:'ПОРТУГАЛИЯ', armeniaArea:'АРМЕНИЯ'
     };
-    let placedCount = 0;
-    let interactionFinished = false;
-    let puzzleSolved = false;
+    let interaction=false, placed=0, puzzleSolved=false, waitingBlock=false;
+    const params=new URLSearchParams(location.search),
+          exit=params.get('exit'),
+          leftLimit=0,
+          rightLimit=gameArea.clientWidth-player.clientWidth,
+          spawnX=(exit==='left'?rightLimit:leftLimit);
+    player.style.left=spawnX+'px';
+    player.style.bottom='80px';
 
-    // 1) Greeting → TAX puzzle
-    function startDialog() {
-      interactionFinished = true;
-      overlayPuzzle.style.display = 'block';
-      dialogName.textContent = '';
-      dialogTextPuzzle.textContent = 
-        'Саша, пора применить свои налоговые знания! Распредели кейсы по странам.';
-      const proceed = e => {
-        if (e.type === 'keydown' && e.key.toLowerCase() === 'e') return;
-        window.removeEventListener('keydown', proceed);
-        window.removeEventListener('mousedown', proceed);
+    // Start puzzle
+    function startDialog(){
+      interaction=true;
+      overlay.style.display='block';
+      nameEl.textContent='';
+      textEl.textContent='Саша, твои налоговые навыки нужны! Распредели кейсы по странам.';
+      const proceed=e=>{
+        if(e.type==='keydown'&&e.key==='e')return;
+        removeEventListener('keydown',proceed);
+        removeEventListener('mousedown',proceed);
         showPuzzle();
       };
-      window.addEventListener('keydown', proceed);
-      window.addEventListener('mousedown', proceed);
+      addEventListener('keydown',proceed);
+      addEventListener('mousedown',proceed);
     }
 
-    function showPuzzle() {
-      dialogName.textContent = 'TAX PUZZLE';
-      dialogTextPuzzle.textContent = '';
-      blocksDiv.innerHTML = '';
-      taxCases.forEach((c, i) => {
-        const d = document.createElement('div');
-        d.className = 'block';
-        d.textContent = c.text;
-        d.draggable = true;
-        d.id = 'case' + i;
-        d.addEventListener('dragstart', e => e.dataTransfer.setData('text/plain', d.id));
+    function showPuzzle(){
+      nameEl.textContent='TAX PUZZLE';
+      textEl.textContent='';
+      blocksDiv.innerHTML='';
+      cases.forEach((c,i)=>{
+        const d=document.createElement('div');
+        d.className='block';
+        d.textContent=c.text;
+        d.draggable=true;
+        d.id='case'+i;
+        d.addEventListener('dragstart',e=>e.dataTransfer.setData('text/plain',d.id));
         blocksDiv.appendChild(d);
       });
-      // show drop areas
-      document.querySelectorAll('.drop-area-container').forEach(c => c.style.display = 'block');
+      document.querySelectorAll('.drop-area-container').forEach(c=>c.style.display='block');
     }
 
     // Drag & Drop
-    function allowDrop(e) { e.preventDefault(); }
-    function drag(e)     { e.dataTransfer.setData('text/plain', e.target.id); }
-    function drop(e) {
+    function allowDrop(e){e.preventDefault();}
+    function drag(e){e.dataTransfer.setData('text/plain',e.target.id);}
+    function drop(e){
       e.preventDefault();
-      const id    = e.dataTransfer.getData('text/plain');
-      const block = document.getElementById(id);
-      const zone  = e.currentTarget.id;
-      const correct = countryZones[zone] === 
-        taxCases.find(c => c.text === block.textContent).country;
-      if (correct) {
-        block.remove();
-        placedCount++;
-        if (placedCount === taxCases.length) finishPuzzle();
+      const id=e.dataTransfer.getData('text/plain'),
+            block=document.getElementById(id),
+            zone=e.currentTarget.id,
+            correct=cases.find(c=>c.text===block.textContent).country===zones[zone];
+      if(correct){
+        block.remove(); placed++;
+        if(placed===cases.length) finishPuzzle();
       } else {
-        dialogTextPuzzle.textContent = 'Неправильно. Попробуй снова.';
-        setTimeout(() => dialogTextPuzzle.textContent = '', 2000);
+        textEl.textContent='Неправильно. Попробуй снова.';
+        setTimeout(()=>textEl.textContent='',2000);
       }
     }
-
-    Object.keys(countryZones).forEach(zoneId => {
-      const area = document.getElementById(zoneId);
-      area.addEventListener('dragover', allowDrop);
-      area.addEventListener('drop', drop);
+    Object.keys(zones).forEach(z=>{
+      const el=document.getElementById(z);
+      el.addEventListener('dragover',allowDrop);
+      el.addEventListener('drop',drop);
     });
 
-    // 3) Puzzle Complete
-    function finishPuzzle() {
-      dialogName.textContent = '';
-      blocksDiv.style.display = 'none';
-      document.querySelectorAll('.drop-area-container').forEach(c => c.style.display = 'none');
-      dialogTextPuzzle.textContent = 'Отлично! Ваш подсказочный код: TAX1';
-      puzzleSolved = true;
-      const proceed = e => {
-        if (e.type === 'keydown' && e.key.toLowerCase() === 'e') return;
-        window.removeEventListener('keydown', proceed);
-        window.removeEventListener('mousedown', proceed);
-        overlayPuzzle.style.display = 'none';
+    // Finish & spawn collectible
+    function finishPuzzle(){
+      nameEl.textContent='';
+      blocksDiv.style.display='none';
+      document.querySelectorAll('.drop-area-container').forEach(c=>c.style.display='none');
+      textEl.textContent='Отлично! Подсказка: TAX1';
+      puzzleSolved=true;
+      const proceed=e=>{
+        if(e.type==='keydown'&&e.key==='e')return;
+        removeEventListener('keydown',proceed);
+        removeEventListener('mousedown',proceed);
+        overlay.style.display='none';
+        spawnCollectible();
       };
-      window.addEventListener('keydown', proceed);
-      window.addEventListener('mousedown', proceed);
+      addEventListener('keydown',proceed);
+      addEventListener('mousedown',proceed);
     }
 
-    // Collectible spawn (unchanged)…
-    function setupCollectible() { /* ... */ }
-
-    // Movement & game loop
-    let keys = {}, isJumping = false, jumpSpeed = 0, gravity = 0.8;
-    function checkProximity() {
-      const wizardX = (gameArea.clientWidth - player.clientWidth) / 2;
-      if (!interactionFinished && Math.abs(player.offsetLeft - wizardX) < 192) {
-        prompt.style.display = 'block';
-      } else {
-        prompt.style.display = 'none';
-      }
+    function spawnCollectible(){
+      waitingBlock=true;
+      player.classList.add('hands');
+      const blk=document.createElement('div');
+      blk.className='collect-block';
+      blk.style.left=(player.offsetLeft+(320-60)/2)+'px';
+      blk.style.bottom=(80+320+10)+'px';
+      gameArea.appendChild(blk);
+      blk.addEventListener('click',()=>{
+        blk.style.transition='all .5s ease-out';
+        blk.style.left='0px';
+        blk.style.bottom=(gameArea.clientHeight-40)+'px';
+        blk.addEventListener('transitionend',()=>{
+          blk.remove();
+          waitingBlock=false;
+          player.classList.remove('hands');
+        },{once:true});
+      });
     }
-    function gameLoop() {
-      if (!interactionFinished && !isJumping) {
-        if (keys['arrowleft'] || keys['a']) {
-          player.style.left = Math.max(0, player.offsetLeft - 4) + 'px';
+
+    // Movement & loop
+    let keys={}, isJump=false, speed=0, grav=0.8;
+    function checkProx(){
+      const wx=(gameArea.clientWidth-player.clientWidth)/2;
+      prompt.style.display=!waitingBlock && !interaction && Math.abs(player.offsetLeft-wx)<192 ? 'block' : 'none';
+    }
+    function loop(){
+      if(!waitingBlock&&!isJump){
+        if(keys['arrowleft']||keys['a']){
+          player.style.left=Math.max(0,player.offsetLeft-4)+'px';
           player.classList.add('flipped');
         }
-        if (keys['arrowright'] || keys['d']) {
-          player.style.left = Math.min(gameArea.clientWidth - player.clientWidth, player.offsetLeft + 4) + 'px';
+        if(keys['arrowright']||keys['d']){
+          player.style.left=Math.min(gameArea.clientWidth-player.clientWidth,player.offsetLeft+4)+'px';
           player.classList.remove('flipped');
         }
-        if ((keys[' '] || keys['arrowup'] || keys['w']) && !isJumping) {
-          isJumping = true;
-          jumpSpeed = 15;
-          window.audio.playJump();
+        if((keys[' ']||keys['arrowup']||keys['w'])&&!isJump){
+          isJump=true; speed=15; window.audio.playJump();
         }
       }
-      if (isJumping) {
-        let bottom = parseFloat(player.style.bottom) || 80;
-        player.style.bottom = (bottom + jumpSpeed) + 'px';
-        jumpSpeed -= gravity;
-        if (bottom + jumpSpeed <= 80) {
-          player.style.bottom = '80px';
-          isJumping = false;
-        }
+      if(isJump){
+        let b=parseFloat(player.style.bottom)||80;
+        player.style.bottom=(b+speed)+'px';
+        speed-=grav;
+        if(b+speed<=80){ player.style.bottom='80px'; isJump=false; }
       }
-      checkProximity();
-      requestAnimationFrame(gameLoop);
+      checkProx();
+      requestAnimationFrame(loop);
     }
-    gameLoop();
+    loop();
 
     // Input
-    document.addEventListener('keydown', e => {
-      keys[e.key.toLowerCase()] = true;
-      if (e.key.toLowerCase() === 'e') {
-        window.audio.playInteract();
-        if (!interactionFinished) {
-          startDialog();
-        } else if (puzzleSolved) {
-          const posX = player.offsetLeft;
-          if (posX <= leftLimit && (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a')) {
-            window.location.href = `chest.html?exit=left`;
-          }
-          if (posX >= rightLimit && (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd')) {
-            window.location.href = `chest.html?exit=right`;
-          }
-        }
+    addEventListener('keydown',e=>{
+      keys[e.key.toLowerCase()]=true;
+      if(e.key==='e'&&!interaction) startDialog();
+      if(e.key==='e' && puzzleSolved){
+        const px=player.offsetLeft;
+        if((e.key==='ArrowLeft'||e.key==='a')&&px<=leftLimit)  location=`chest.html?exit=left`;
+        if((e.key==='ArrowRight'||e.key==='d')&&px>=rightLimit) location=`chest.html?exit=right`;
+        window.location.href = location;
       }
     });
-    document.addEventListener('keyup', e => {
-      keys[e.key.toLowerCase()] = false;
-    });
-
+    addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
   </script>
 </body>
 </html>
