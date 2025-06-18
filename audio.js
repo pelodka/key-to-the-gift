@@ -1,4 +1,4 @@
-/* Shared audio handling for Key to the Gift game */
+/* Audio.js — Shared audio handling for Key to the Gift game */
 
 // 1) Background music (looped)
 const bgm = new Audio('audio/background.mp3');
@@ -9,16 +9,17 @@ bgm.volume = 0.5;
 const sfxPaths = {
   jump:      'audio/jump.mp3',
   interact:  'audio/interact.mp3',
-  chestOpen: 'audio/chest_open.mp3'
+  chestOpen: 'audio/chest_open.mp3',
+  victory:   'audio/victory.mp3'      // ← new victory sound
 };
 
 // 3) Cache for instantiated Audio objects
 const sfxCache = {};
 
-// 4) Play a named sound effect (lazy-load if needed)
+// 4) Play a named sound effect (lazy-load if needed), return the Audio instance
 function playSfx(name) {
   const path = sfxPaths[name];
-  if (!path) return;
+  if (!path) return null;
 
   let sound = sfxCache[name];
   if (!sound) {
@@ -28,18 +29,18 @@ function playSfx(name) {
 
   sound.currentTime = 0;
   sound.play().catch(() => {});
+  return sound;
 }
 
 // 5) Initialize and persist BGM across scenes with continuous playback
-const BGM_STARTED_KEY = 'bgmStarted';
+const BGM_STARTED_KEY    = 'bgmStarted';
 const BGM_START_TIME_KEY = 'bgmStartTime';
 
 document.addEventListener('DOMContentLoaded', () => {
-  const now = Date.now();
+  const now            = Date.now();
   const startTimestamp = parseInt(sessionStorage.getItem(BGM_START_TIME_KEY), 10);
-  const hasStarted = sessionStorage.getItem(BGM_STARTED_KEY) === 'true';
+  const hasStarted     = sessionStorage.getItem(BGM_STARTED_KEY) === 'true';
 
-  // Function to start and record BGM
   const startBgm = () => {
     sessionStorage.setItem(BGM_STARTED_KEY, 'true');
     sessionStorage.setItem(BGM_START_TIME_KEY, now.toString());
@@ -48,7 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   if (!hasStarted) {
-    // only trigger on scene2 first interaction
     if (window.location.pathname.includes('scene2.html')) {
       const onFirst = () => {
         startBgm();
@@ -59,13 +59,11 @@ document.addEventListener('DOMContentLoaded', () => {
       window.addEventListener('keydown', onFirst);
     }
   } else {
-    // already started: resume at elapsed position
     const elapsed = (now - (isNaN(startTimestamp) ? now : startTimestamp)) / 1000;
     bgm.addEventListener('loadedmetadata', () => {
       bgm.currentTime = bgm.duration ? elapsed % bgm.duration : 0;
       bgm.play().catch(() => {});
     });
-    // In case metadata already loaded
     if (bgm.readyState >= 1) {
       bgm.currentTime = bgm.duration ? elapsed % bgm.duration : 0;
       bgm.play().catch(() => {});
@@ -77,5 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.audio = {
   playJump:      () => playSfx('jump'),
   playInteract:  () => playSfx('interact'),
-  playChestOpen: () => playSfx('chestOpen')
+  playChestOpen: () => playSfx('chestOpen'),
+  playVictory:   () => playSfx('victory'),
+  stopBgm:       () => { bgm.pause(); bgm.currentTime = 0; }
 };
