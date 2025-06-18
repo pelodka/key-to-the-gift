@@ -7,10 +7,12 @@ bgm.volume = 0.5;
 
 // 2) Paths for SFX in the 'audio/' folder
 const sfxPaths = {
-  jump:      'audio/jump.mp3',
-  interact:  'audio/interact.mp3',
-  chestOpen: 'audio/chest_open.mp3',
-  victory:   'audio/victory.mp3'      // ← new victory sound
+  jump:         'audio/jump.mp3',
+  interact:     'audio/interact.mp3',
+  chestOpen:    'audio/chest_open.mp3',
+  victory:      'audio/victory.mp3',      // ← new victory sound
+  explosion:    'audio/explosion.mp3',     // ← new explosion sound
+  evilLaugh:    'audio/evil-laugh.mp3'     // ← new evil laugh
 };
 
 // 3) Cache for instantiated Audio objects
@@ -73,9 +75,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 6) Expose API for game logic
 window.audio = {
-  playJump:      () => playSfx('jump'),
-  playInteract:  () => playSfx('interact'),
-  playChestOpen: () => playSfx('chestOpen'),
-  playVictory:   () => playSfx('victory'),
-  stopBgm:       () => { bgm.pause(); bgm.currentTime = 0; }
+  playJump:         () => playSfx('jump'),
+  playInteract:     () => playSfx('interact'),
+  playChestOpen:    () => playSfx('chestOpen'),
+  playVictory:      () => playSfx('victory'),
+  playExplosion:    () => playSfx('explosion'),
+  playEvilLaugh:    () => playSfx('evilLaugh'),
+  stopBgm:          () => { bgm.pause(); bgm.currentTime = 0; }
 };
