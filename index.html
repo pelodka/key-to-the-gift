@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Key to the Gift</title>
+   <!-- Audio handler -->
+  <script src="audio.js"></script>
   <style>
     /* Reset & base */
     html, body {
@@ -213,6 +215,7 @@
     getBtn.addEventListener('click', ()=>{
       if (!getBtn.classList.contains('enabled')) return;
       gameC.classList.add('shake');
+       window.audio.playExplosion();
       setTimeout(()=>{
         dragonB.style.display='block';
         dragonB.style.left='30%'; dragonB.style.top='20%';
@@ -221,7 +224,9 @@
           dragonB.style.transform='translate(-50%,-50%) scale(3)';
           setTimeout(()=>{
             const bubble=document.createElement('div');
-            bubble.className='speech'; bubble.textContent='ХА-ХА!';
+            bubble.className='speech'; 
+            bubble.textContent='ХА-ХА!';
+            window.audio.playEvilLaugh();
             dragon.appendChild(bubble);
             [gift1,gift2].forEach((g,i)=>{
               g.style.position='absolute';
