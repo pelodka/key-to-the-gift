@@ -1,4 +1,4 @@
-```html
+html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,8 +14,11 @@
     /* Background */
     #game-container { position: relative; width: 100%; height: 100%; background: url('background.png') center center / cover no-repeat; }
     /* Player sprite */
-    #player { position: absolute; width: 320px; height: 320px; bottom: 80px; transform-origin: center bottom;
-              background: url('player_idle.png') center center no-repeat; background-size: contain; image-rendering: pixelated; }
+    #player {
+      position: absolute; width: 320px; height: 320px; bottom: 80px; transform-origin: center bottom;
+      background: url('player_idle.png') center center no-repeat;
+      background-size: contain; image-rendering: pixelated;
+    }
     #player.flipped { transform: scaleX(-1); }
     /* Wizard */
     #wizard { position: absolute; width: 300px; height: 300px; bottom: 80px; left: 50%; transform: translateX(-50%); pointer-events: none; }
@@ -122,7 +125,7 @@
     const dialogTextPuzzle = document.getElementById('dialog-text');
     const blocksDiv        = document.getElementById('blocks');
 
-    // Spawn logic (unchanged)…
+    // Spawn logic
     const params    = new URLSearchParams(location.search);
     const exitSide  = params.get('exit');
     const spawnSide = (exitSide === 'left') ? 'right' : 'left';
@@ -179,9 +182,11 @@
         d.addEventListener('dragstart', e => e.dataTransfer.setData('text/plain', d.id));
         blocksDiv.appendChild(d);
       });
+      // show drop areas
+      document.querySelectorAll('.drop-area-container').forEach(c => c.style.display = 'block');
     }
 
-    // Drag & Drop for TAX puzzle
+    // Drag & Drop
     function allowDrop(e) { e.preventDefault(); }
     function drag(e)     { e.dataTransfer.setData('text/plain', e.target.id); }
     function drop(e) {
@@ -189,19 +194,18 @@
       const id    = e.dataTransfer.getData('text/plain');
       const block = document.getElementById(id);
       const zone  = e.currentTarget.id;
-      const correct = countryZones[zone] ===
+      const correct = countryZones[zone] === 
         taxCases.find(c => c.text === block.textContent).country;
       if (correct) {
         block.remove();
         placedCount++;
         if (placedCount === taxCases.length) finishPuzzle();
       } else {
-        dialogTextPuzzle.textContent = 'Эх, придется заплатить KPMG!';
+        dialogTextPuzzle.textContent = 'Неправильно. Попробуй снова.';
         setTimeout(() => dialogTextPuzzle.textContent = '', 2000);
       }
     }
 
-    // Attach listeners to drop zones
     Object.keys(countryZones).forEach(zoneId => {
       const area = document.getElementById(zoneId);
       area.addEventListener('dragover', allowDrop);
@@ -213,9 +217,8 @@
       dialogName.textContent = '';
       blocksDiv.style.display = 'none';
       document.querySelectorAll('.drop-area-container').forEach(c => c.style.display = 'none');
-      dialogTextPuzzle.textContent = 'Отлично! Подсказка - SCHWARZ';
+      dialogTextPuzzle.textContent = 'Отлично! Ваш подсказочный код: TAX1';
       puzzleSolved = true;
-      // proceed: hide overlay after key/mouse
       const proceed = e => {
         if (e.type === 'keydown' && e.key.toLowerCase() === 'e') return;
         window.removeEventListener('keydown', proceed);
@@ -226,28 +229,71 @@
       window.addEventListener('mousedown', proceed);
     }
 
-    // Collectible spawn, movement, input, and transitions (unchanged)…
-    function setupCollectible() { /* … */ }
+    // Collectible spawn (unchanged)…
+    function setupCollectible() { /* ... */ }
+
+    // Movement & game loop
     let keys = {}, isJumping = false, jumpSpeed = 0, gravity = 0.8;
-    function checkProximity() { /* … */ }
-    function gameLoop() { /* … */ requestAnimationFrame(gameLoop); }
+    function checkProximity() {
+      const wizardX = (gameArea.clientWidth - player.clientWidth) / 2;
+      if (!interactionFinished && Math.abs(player.offsetLeft - wizardX) < 192) {
+        prompt.style.display = 'block';
+      } else {
+        prompt.style.display = 'none';
+      }
+    }
+    function gameLoop() {
+      if (!interactionFinished && !isJumping) {
+        if (keys['arrowleft'] || keys['a']) {
+          player.style.left = Math.max(0, player.offsetLeft - 4) + 'px';
+          player.classList.add('flipped');
+        }
+        if (keys['arrowright'] || keys['d']) {
+          player.style.left = Math.min(gameArea.clientWidth - player.clientWidth, player.offsetLeft + 4) + 'px';
+          player.classList.remove('flipped');
+        }
+        if ((keys[' '] || keys['arrowup'] || keys['w']) && !isJumping) {
+          isJumping = true;
+          jumpSpeed = 15;
+          window.audio.playJump();
+        }
+      }
+      if (isJumping) {
+        let bottom = parseFloat(player.style.bottom) || 80;
+        player.style.bottom = (bottom + jumpSpeed) + 'px';
+        jumpSpeed -= gravity;
+        if (bottom + jumpSpeed <= 80) {
+          player.style.bottom = '80px';
+          isJumping = false;
+        }
+      }
+      checkProximity();
+      requestAnimationFrame(gameLoop);
+    }
     gameLoop();
 
+    // Input
     document.addEventListener('keydown', e => {
       keys[e.key.toLowerCase()] = true;
       if (e.key.toLowerCase() === 'e') {
         window.audio.playInteract();
-        if (!interactionFinished) startDialog();
-      }
-      if (puzzleSolved) {
-        const posX = player.offsetLeft;
-        if ((e.key.toLowerCase()==='a' && posX<=leftLimit) ||
-            (e.key.toLowerCase()==='d' && posX>=rightLimit)) {
-          window.location.href = `chest.html?exit=${e.key.toLowerCase()==='a'?'left':'right'}`;
+        if (!interactionFinished) {
+          startDialog();
+        } else if (puzzleSolved) {
+          const posX = player.offsetLeft;
+          if (posX <= leftLimit && (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a')) {
+            window.location.href = `chest.html?exit=left`;
+          }
+          if (posX >= rightLimit && (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd')) {
+            window.location.href = `chest.html?exit=right`;
+          }
         }
       }
     });
-    document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+    document.addEventListener('keyup', e => {
+      keys[e.key.toLowerCase()] = false;
+    });
+
   </script>
 </body>
 </html>
