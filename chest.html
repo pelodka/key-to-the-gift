@@ -97,19 +97,8 @@
     const openBtn      = document.getElementById('open-btn');
     const feedback     = document.getElementById('feedback');
 
-    // Movement bounds
-    const playerWidth = 320;
-    const leftLimit   = 0;
-    const rightLimit  = gameArea.clientWidth - playerWidth;
-
-    // Spawn logic
-    const params    = new URLSearchParams(location.search);
-    const exitSide  = params.get('exit');
-    let spawnSide   = (exitSide === 'left') ? 'right' : 'left';
-    let posX        = (spawnSide === 'left') ? leftLimit : rightLimit;
-    let posY        = 0;
-
     // State
+    let puzzleSolved = false;
     let keys       = {}, isJumping = false, jumpSpeed = 0, gravity = 0.8;
     let inDialog   = false;
     let dragData   = null;
@@ -122,6 +111,7 @@
     // Greeting stays until click or keypress
     const greeting = 'А вот и последняя загадка! Подарки уже совсем рядом!';
     function startDialog() {
+      if (puzzleSolved) return;
       inDialog = true;
       overlay.style.display = 'block';
       dialogText.textContent = greeting;
@@ -141,7 +131,7 @@
       document.addEventListener('keydown', proceed, { once: true });
     }
 
-    // Create a pool‐block
+    // Create a pool-block
     function createBox(color) {
       const box = document.createElement('div');
       box.className     = 'draggable-box';
@@ -225,11 +215,12 @@
 
     function checkAllFilled() {
       const all = Array.from(document.querySelectorAll('.drop-target'));
-      openBtn.style.display = all.every(t => t.dataset.filled) ? 'inline-block' : 'none';
+      openBtn.style.display = all.every(t => t.dataset.filled) && !puzzleSolved ? 'inline-block' : 'none';
     }
 
-    // “ОТКРЫТЬ” logic
+    // "ОТКРЫТЬ" logic
     openBtn.addEventListener('click', () => {
+      if (puzzleSolved) return;
       feedback.textContent = '';
       const order = Array.from(document.querySelectorAll('.drop-target'))
                          .map(t => t.dataset.filled);
@@ -239,20 +230,14 @@
         return;
       }
 
-      // 1) Stop the BGM
+      puzzleSolved = true;
+      prompt.style.display = 'none';
       window.audio.stopBgm();
-
-      // 2) Play chest-open SFX
       const chestAudio = window.audio.playChestOpen();
-
-      // immediately flip the sprite
       document.getElementById('wizard-img').src = 'chest_opened.png';
-
-      // 3) hide the puzzle overlay so we see chest & player
       overlay.style.display = 'none';
       inDialog = false;
 
-      // 4) after chest-open finishes, show final dialog & play victory
       if (chestAudio) {
         chestAudio.addEventListener('ended', () => {
           overlay.style.display = 'block';
@@ -274,6 +259,10 @@
       player.style.bottom = (80 + posY) + 'px';
     }
     function checkProximity() {
+      if (puzzleSolved) {
+        prompt.style.display = 'none';
+        return;
+      }
       const wizardX = (gameArea.clientWidth - playerWidth) / 2;
       prompt.style.display =
         !inDialog && Math.abs(posX - wizardX) < playerWidth * 0.6
@@ -281,7 +270,7 @@
           : 'none';
     }
     function gameLoop() {
-      if (!inDialog) {
+      if (!inDialog && !puzzleSolved) {
         if (keys['arrowleft'] || keys['a']) {
           posX = Math.max(leftLimit, posX - 4);
           player.classList.add('flipped');
@@ -310,17 +299,30 @@
 
     // key listeners
     document.addEventListener('keydown', e => {
+      if (puzzleSolved) return;
       keys[e.key.toLowerCase()] = true;
       if (e.key.toLowerCase() === 'e' && prompt.style.display === 'block') {
         if (!inDialog) startDialog();
       }
     });
     document.addEventListener('keyup', e => {
+      if (puzzleSolved) return;
       const key = e.key.toLowerCase();
-      // only play interact SFX on E
       if (key === 'e') window.audio.playInteract();
       keys[key] = false;
     });
+
+    // Spawn logic
+    const params    = new URLSearchParams(location.search);
+    const exitSide  = params.get('exit');
+    let spawnSide   = (exitSide === 'left') ? 'right' : 'left';
+    let posX        = (spawnSide === 'left') ? 0 : (gameArea.clientWidth - playerWidth);
+    let posY        = 0;
+
+    // Movement bounds
+    const playerWidth = 320;
+    const leftLimit   = 0;
+    const rightLimit  = gameArea.clientWidth - playerWidth;
   </script>
 </body>
 </html>
