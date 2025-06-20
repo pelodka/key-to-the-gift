@@ -123,9 +123,9 @@
     // --------------- MINIGAME LOGIC ---------------
     function startMiniGame() {
       minigameUI.style.display = 'block';
-      minigameUI.innerHTML = 'Поймай 5 нот 🎵';
+      minigameUI.innerHTML = 'ПОДБЕРИ 7 нот 🎵';
       minigameScore.style.display = 'block';
-      minigameScore.textContent = `0 / 5`;
+      minigameScore.textContent = `0 / 7`;
 
       // Switch BGM to minigame.mp3
       window.audio && window.audio.switchBgm && window.audio.switchBgm('minigame');
@@ -133,7 +133,7 @@
       player.style.background = "url('player_collects.png') center center no-repeat";
       player.style.backgroundSize = 'contain';
 
-      let notesCollected = 0, notesFalling = 0, totalNotes = 5, gameActive = true;
+      let notesCollected = 0, notesFalling = 0, totalNotes = 7, gameActive = true;
       const activeNotes = [];
 
       function spawnNote() {
