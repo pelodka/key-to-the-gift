@@ -7,30 +7,24 @@
   <!-- include shared audio logic -->
   <script src="audio.js"></script>
   <style>
-    /* Base reset */
     html, body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: black; font-family: 'Courier New', monospace; }
-    /* Wrapper scaling */
     #wrapper { position: absolute; top: 0; left: 0; width: 1920px; height: 1200px; transform-origin: top left; }
-    /* Background */
     #game-container { position: relative; width: 100%; height: 100%; background: url('background.png') center center / cover no-repeat; }
-    /* Player sprite */
     #player {
       position: absolute; width: 320px; height: 320px; bottom: 80px; transform-origin: center bottom;
       background: url('player_idle.png') center center no-repeat;
       background-size: contain; image-rendering: pixelated;
+      transition: background-image 0.2s;
     }
     #player.flipped { transform: scaleX(-1); }
-    /* Wizard */
     #wizard { position: absolute; width: 300px; height: 300px; bottom: 80px; left: 50%; transform: translateX(-50%); pointer-events: none; }
     #wizard-img { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
-    /* Prompt */
     #prompt {
       position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%);
       background: white; color: black; padding: 8px 12px; border: 4px solid red; border-radius: 4px;
       font-size: 28px; font-family: 'Arial Black'; text-transform: uppercase;
       pointer-events: none; display: none; white-space: nowrap;
     }
-    /* Dialog overlay */
     #dialog-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); display:none; }
     #dialog-box {
       position: absolute; top:50%; left:50%; transform: translate(-50%,-50%);
@@ -38,13 +32,27 @@
       font-family: 'Courier New', monospace;
     }
     #dialog-text { margin-bottom: 16px; font-size: 28px; color: black; }
-    .choice-btn {
-      display: block; margin: 8px 0; padding: 12px 16px; background: #eee;
-      border: 2px solid #333; cursor: pointer; font-size: 22px;
-    }
-    .choice-btn:hover { background: #ddd; }
-    /* Collectible block */
     .collect-block { position: absolute; width: 60px; height: 40px; cursor: pointer; image-rendering: pixelated; }
+    .note {
+      position: absolute; font-size: 60px; transition: filter 0.2s;
+      user-select: none; pointer-events: none;
+      text-shadow: 1px 2px 4px #000, 0 0 20px #fff;
+      filter: drop-shadow(0 0 8px #00f5);
+      z-index: 5;
+    }
+    #minigame-ui {
+      position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+      color: white; font-size: 32px; background: rgba(0,0,0,0.6); border-radius: 12px; padding: 12px 28px; z-index: 6; display: none;
+      letter-spacing: 2px;
+      font-family: 'Arial Black', monospace;
+    }
+    #minigame-score {
+      position: absolute; top: 28px; right: 64px;
+      color: #fff; background: rgba(0,0,0,0.65);
+      font-size: 42px; padding: 14px 38px; border-radius: 14px;
+      font-family: 'Arial Black', monospace; letter-spacing: 2px; z-index:7; display: none;
+      box-shadow: 0 2px 8px #000a;
+    }
   </style>
 </head>
 <body>
@@ -62,6 +70,8 @@
           <div id="choices"></div>
         </div>
       </div>
+      <div id="minigame-ui"></div>
+      <div id="minigame-score"></div>
     </div>
   </div>
 
@@ -85,6 +95,8 @@
     const overlay    = document.getElementById('dialog-overlay');
     const dialogText = document.getElementById('dialog-text');
     const choicesDiv = document.getElementById('choices');
+    const minigameUI = document.getElementById('minigame-ui');
+    const minigameScore = document.getElementById('minigame-score');
 
     // Movement bounds
     const playerWidth = 320;
@@ -106,38 +118,137 @@
 
     // Dialog data
     const greeting   = 'Привет, Саша! Представляешь, я проснулся сегодня восьмибитным, а в голове вертится вопрос!';
-    const question   = 'Какой стиль одежды ты предпочитаешь?';
-    const answers    = [
-      'Спорт (спортивка, кеды)',
-      'Спорт шик (спортивка, туфли)',
-      'Business Formal (брюки, пиджак, рубашка, галстук, туфли)',
-      'Business Casual (брюки, пиджак, футболка, тапочки)'
-    ];
-    const correctIdx = 2;
-    // -- CHANGE: Markup for ROT as red & bold
     const correctTip = 'Ну конечно! Спасибо! Кстати, я должен дать тебе подсказку - это <span style="color:red;font-weight:bold;">BLUTEGE</span>.';
 
-    // Show question
-    function showQuestion() {
-      dialogText.textContent = question;
+    // --------------- MINIGAME LOGIC ---------------
+    function startMiniGame() {
+      minigameUI.style.display = 'block';
+      minigameUI.innerHTML = 'Поймай 5 нот 🎵';
+      minigameScore.style.display = 'block';
+      minigameScore.textContent = `0 / 5`;
+
+      // Switch BGM to minigame.mp3
+      window.audio && window.audio.switchBgm && window.audio.switchBgm('minigame');
+
+      player.style.background = "url('player_collects.png') center center no-repeat";
+      player.style.backgroundSize = 'contain';
+
+      let notesCollected = 0, notesFalling = 0, totalNotes = 5, gameActive = true;
+      const activeNotes = [];
+
+      function spawnNote() {
+        if (!gameActive) return;
+        notesFalling++;
+        const note = document.createElement('div');
+        note.className = 'note';
+        note.innerText = '🎵';
+        // random x within play area
+        let nx = Math.floor(Math.random() * (gameArea.clientWidth - 60));
+        note.style.left = nx + 'px';
+        note.style.top = '0px';
+        gameArea.appendChild(note);
+        activeNotes.push(note);
+
+        // animation state
+        let noteY = 0, speed = 4 + Math.random() * 3, caught = false;
+        function fall() {
+          if (!gameActive) { note.remove(); return; }
+          noteY += speed;
+          note.style.top = noteY + 'px';
+          // Collision test with player
+          const playerRect = player.getBoundingClientRect();
+          const noteRect   = note.getBoundingClientRect();
+          const pa = playerRect.left, pb = playerRect.right, na = noteRect.left, nb = noteRect.right;
+          const overlapX = (na < pb && nb > pa);
+          const noteBottom = noteRect.bottom, playerTop = playerRect.top + 60;
+          const overlapY = (noteBottom > playerTop && noteRect.top < playerRect.bottom);
+
+          if (!caught && overlapX && overlapY) {
+            caught = true;
+            window.audio && window.audio.playCollect && window.audio.playCollect();
+            note.style.filter = 'brightness(2) drop-shadow(0 0 10px #ff0)';
+            setTimeout(() => note.remove(), 100);
+            notesCollected++;
+            minigameScore.textContent = `${notesCollected} / ${totalNotes}`;
+            minigameUI.innerHTML = `Поймано: ${notesCollected} / ${totalNotes} нот 🎵`;
+            if (notesCollected >= totalNotes) {
+              gameActive = false;
+              setTimeout(minigameComplete, 350);
+              minigameUI.innerHTML = `Готово!`;
+              minigameScore.textContent = `${notesCollected} / ${totalNotes}`;
+            }
+            return;
+          }
+          // Out of bounds: missed
+          if (noteY > gameArea.clientHeight - 30 && !caught) {
+            note.remove();
+            if (gameActive) setTimeout(spawnNote, 350);
+            return;
+          }
+          if (!caught && gameActive) requestAnimationFrame(fall);
+        }
+        requestAnimationFrame(fall);
+      }
+
+      // Spawn first wave
+      let notesStarted = 0;
+      function spawnNotesInterval() {
+        if (!gameActive) return;
+        spawnNote();
+        notesStarted++;
+        if (notesStarted < totalNotes) setTimeout(spawnNotesInterval, 700 + Math.random()*800);
+      }
+      spawnNotesInterval();
+
+      // Player controls (left/right, no jump in minigame)
+      function minigameLoop() {
+        if (!gameActive) return;
+        if (keys['arrowleft']||keys['a']) { posX = Math.max(leftLimit, posX-6); player.classList.add('flipped'); }
+        if (keys['arrowright']||keys['d']){ posX = Math.min(rightLimit,posX+6); player.classList.remove('flipped'); }
+        updatePos();
+        requestAnimationFrame(minigameLoop);
+      }
+      minigameLoop();
+
+      // End minigame and proceed
+      function minigameComplete() {
+        activeNotes.forEach(n=>n.remove());
+        minigameUI.style.display = 'none';
+        minigameScore.style.display = 'none';
+        player.style.background = "url('player_idle.png') center center no-repeat";
+        player.style.backgroundSize = 'contain';
+        // Restore BGM!
+        window.audio && window.audio.restoreBgm && window.audio.restoreBgm();
+        showBLUTEGETip();
+      }
+    }
+    // --- END MINIGAME LOGIC ---
+
+    // Show BLUTEGE tip
+    function showBLUTEGETip() {
+      inDialog = true;
+      overlay.style.display = 'block';
+      dialogText.innerHTML = correctTip;
       choicesDiv.innerHTML = '';
-      answers.forEach((ans, i) => {
-        const btn = document.createElement('button');
-        btn.className = 'choice-btn';
-        btn.textContent = ans;
-        btn.onclick = () => selectAnswer(i);
-        choicesDiv.appendChild(btn);
-      });
+      const onInput = () => {
+        cleanup(); overlay.style.display = 'none'; inDialog = false; interactionFinished = true; setupCollectible();
+      };
+      const cleanup = () => {
+        window.removeEventListener('keydown', onInput);
+        window.removeEventListener('mousedown', onInput);
+      };
+      window.addEventListener('keydown', onInput);
+      window.addEventListener('mousedown', onInput);
     }
 
-    // Initial dialog
+    // Initial dialog (greeting, then minigame)
     function startDialog() {
       inDialog = true;
       overlay.style.display = 'block';
       dialogText.textContent = greeting;
       choicesDiv.innerHTML = '';
       setTimeout(() => {
-        const proceed = () => { showQuestion(); cleanupListeners(); };
+        const proceed = () => { cleanupListeners(); overlay.style.display='none'; inDialog=false; startMiniGame(); };
         const cleanupListeners = () => {
           window.removeEventListener('keydown', proceed);
           window.removeEventListener('mousedown', proceed);
@@ -145,35 +256,6 @@
         window.addEventListener('keydown', proceed);
         window.addEventListener('mousedown', proceed);
       }, 0);
-    }
-
-    // Handle answer
-    function selectAnswer(i) {
-      inDialog = true;
-      overlay.style.display = 'block';
-      choicesDiv.innerHTML = '';
-      if (i === correctIdx) {
-        // -- CHANGE: use innerHTML to render markup!
-        dialogText.innerHTML = correctTip;
-        const onInput = () => {
-          cleanup(); overlay.style.display = 'none'; inDialog = false; interactionFinished = true; setupCollectible();
-        };
-        const cleanup = () => {
-          window.removeEventListener('keydown', onInput);
-          window.removeEventListener('mousedown', onInput);
-        };
-        window.addEventListener('keydown', onInput);
-        window.addEventListener('mousedown', onInput);
-      } else {
-        dialogText.textContent = 'Нее, это не совсем то!';
-        const onInput = () => { cleanup(); showQuestion(); };
-        const cleanup = () => {
-          window.removeEventListener('keydown', onInput);
-          window.removeEventListener('mousedown', onInput);
-        };
-        window.addEventListener('keydown', onInput);
-        window.addEventListener('mousedown', onInput);
-      }
     }
 
     // Set up collectible block
@@ -232,6 +314,7 @@
       }
     });
     document.addEventListener('keyup', e => { keys[e.key.toLowerCase()]=false; });
+
   </script>
 </body>
 </html>
