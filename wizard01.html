@@ -174,7 +174,7 @@
             setTimeout(() => note.remove(), 100);
             notesCollected++;
             minigameScore.textContent = `${notesCollected} / ${totalNotes}`;
-            minigameUI.innerHTML = `Поймано: ${notesCollected} / ${totalNotes} нот 🎵`;
+            minigameUI.innerHTML = `ПОДОБРАНО: ${notesCollected} / ${totalNotes} нот 🎵`;
             if (notesCollected >= totalNotes) {
               gameActive = false;
               setTimeout(minigameComplete, 350);
