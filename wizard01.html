@@ -117,8 +117,8 @@
     let blockColor = 'red';
 
     // Dialog data
-    const greeting   = 'Привет, Саша! Представляешь, я проснулся сегодня восьмибитным, а в голове вертится вопрос!';
-    const correctTip = 'Ну конечно! Спасибо! Кстати, я должен дать тебе подсказку - это <span style="color:red;font-weight:bold;">BLUTEGE</span>.';
+    const greeting   = 'Привет, Саша! Представляешь, в голове вертится песня! Но не могу ноты ПОДОБРАТЬ, поможешь?';
+    const correctTip = 'Ну точно! Спасибо! Кстати, я должен дать тебе подсказку - это <span style="color:red;font-weight:bold;">BLUTEGE</span>.';
 
     // --------------- MINIGAME LOGIC ---------------
     function startMiniGame() {
@@ -303,7 +303,7 @@
         window.audio.playInteract();
         if (!interactionFinished) startDialog();
         else if (!waitingBlock) {
-          overlay.style.display='block'; dialogText.textContent='Иди же дальше и собери все части ключа!'; choicesDiv.innerHTML='';
+          overlay.style.display='block'; dialogText.textContent='ЙЕЕЕ РОЦК! Можешь идти дальше!'; choicesDiv.innerHTML='';
           setTimeout(()=>overlay.style.display='none',2000);
         }
       }
