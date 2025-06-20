@@ -29,6 +29,7 @@
     .drop-target { display: inline-block; width: 120px; border-bottom: 2px solid #333; margin: 0 5px; vertical-align: middle; min-height: 36px; cursor: pointer; }
     #open-btn { display: inline-block; margin-top: 20px; padding: 10px 20px; background: #eee; border: 2px solid #333; font-size: 24px; cursor: pointer; }
     #feedback { margin-top: 12px; font-size: 24px; color: red; height: 30px; }
+    /* Confetti - nothing to style, handled in JS */
   </style>
 </head>
 <body>
@@ -194,6 +195,73 @@
       openBtn.style.display = all.every(t => t.dataset.filled) && !puzzleSolved ? 'inline-block' : 'none';
     }
 
+    // --- Confetti effect logic ---
+    const confettiColors = [
+      '#ff595e', '#ffca3a', '#8ac926', '#1982c4', '#6a4c93',
+      '#fdffb6', '#b5ead7', '#f9c74f', '#f94144', '#43aa8b'
+    ];
+    let confettiActive = false;
+
+    function startConfetti() {
+      if (confettiActive) return;
+      confettiActive = true;
+      const confettiCanvas = document.createElement('div');
+      confettiCanvas.id = 'confetti-canvas';
+      confettiCanvas.style.position = 'fixed';
+      confettiCanvas.style.left = '0';
+      confettiCanvas.style.top = '0';
+      confettiCanvas.style.width = '100vw';
+      confettiCanvas.style.height = '100vh';
+      confettiCanvas.style.pointerEvents = 'none';
+      confettiCanvas.style.zIndex = '99999';
+      document.body.appendChild(confettiCanvas);
+
+      function spawnConfetto() {
+        if (!confettiActive) return;
+        const confetto = document.createElement('div');
+        const size = Math.random() * 16 + 8;
+        confetto.style.position = 'absolute';
+        confetto.style.width = `${size}px`;
+        confetto.style.height = `${size * 0.5}px`;
+        confetto.style.background = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+        confetto.style.borderRadius = `${size / 3}px`;
+        confetto.style.left = `${Math.random() * window.innerWidth}px`;
+        confetto.style.top = `-32px`;
+        confetto.style.opacity = Math.random() * 0.4 + 0.6;
+        confetto.style.transform = `rotate(${Math.random() * 360}deg)`;
+        confetto.style.pointerEvents = 'none';
+        confettiCanvas.appendChild(confetto);
+
+        // Animate confetto
+        const duration = Math.random() * 2 + 2.5; // seconds
+        const xDrift = (Math.random() - 0.5) * 120;
+        const keyframes = [
+          { transform: confetto.style.transform, top: '-32px', left: confetto.style.left },
+          {
+            transform: `rotate(${360 + Math.random() * 180}deg)`,
+            top: `${window.innerHeight + 32}px`,
+            left: `calc(${confetto.style.left} + ${xDrift}px)`
+          }
+        ];
+        confetto.animate(keyframes, {
+          duration: duration * 1000,
+          easing: 'linear'
+        });
+
+        // Remove after falling
+        setTimeout(() => confetto.remove(), duration * 1000);
+      }
+
+      // Spawn confetti in a loop
+      function confettiLoop() {
+        if (!confettiActive) return;
+        for (let i = 0; i < 7; i++) setTimeout(spawnConfetto, i * 80);
+        setTimeout(confettiLoop, 180);
+      }
+      confettiLoop();
+    }
+    // --- End Confetti effect logic ---
+
     // Chest opening logic
     openBtn.addEventListener('click', () => {
       if (puzzleSolved) return;
@@ -220,6 +288,7 @@
           openBtn.style.display = 'none';
           feedback.textContent = '';
           window.audio.playVictory();
+          startConfetti(); // <- Start confetti!
         });
       }
     });
