@@ -115,6 +115,7 @@
     let inDialog = false, interactionFinished = false, waitingBlock = false;
     let puzzleSolved = false;
     let blockColor = 'red';
+    let minigameActive = false;
 
     // Dialog data
     const greeting   = 'Привет, Саша! Представляешь, в голове вертится песня! Но не могу ноты ПОДОБРАТЬ, поможешь?';
@@ -122,6 +123,9 @@
 
     // --------------- MINIGAME LOGIC ---------------
     function startMiniGame() {
+      minigameActive = true;
+      prompt.style.display = 'none';
+
       minigameUI.style.display = 'block';
       minigameUI.innerHTML = 'ПОДБЕРИ 7 нот 🎵';
       minigameScore.style.display = 'block';
@@ -212,6 +216,7 @@
 
       // End minigame and proceed
       function minigameComplete() {
+        minigameActive = false;
         activeNotes.forEach(n=>n.remove());
         minigameUI.style.display = 'none';
         minigameScore.style.display = 'none';
@@ -282,7 +287,12 @@
     function updatePos() { player.style.left = posX + 'px'; player.style.bottom = (80 + posY) + 'px'; }
     function checkProximity() {
       const wizardX = (gameArea.clientWidth - playerWidth)/2;
-      prompt.style.display = (!inDialog && !waitingBlock && Math.abs(posX - wizardX) < playerWidth*0.6) ? 'block' : 'none';
+      // Hide prompt if minigame active
+      if (minigameActive) {
+        prompt.style.display = 'none';
+      } else {
+        prompt.style.display = (!inDialog && !waitingBlock && Math.abs(posX - wizardX) < playerWidth*0.6) ? 'block' : 'none';
+      }
     }
     function gameLoop() {
       if (!inDialog && !waitingBlock) {
@@ -300,6 +310,7 @@
       const key = e.key.toLowerCase(); keys[key]=true;
       // Interact
       if (key==='e' && prompt.style.display==='block') {
+        if (minigameActive) return; // Prevent interaction during minigame!
         window.audio.playInteract();
         if (!interactionFinished) startDialog();
         else if (!waitingBlock) {
