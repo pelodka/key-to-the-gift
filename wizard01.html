@@ -114,7 +114,8 @@
       'Business Casual (брюки, пиджак, футболка, тапочки)'
     ];
     const correctIdx = 2;
-    const correctTip = 'Ну конечно! Спасибо! Кстати, я должен дать тебе подсказку - это ROT.';
+    // -- CHANGE: Markup for ROT as red & bold
+    const correctTip = 'Ну конечно! Спасибо! Кстати, я должен дать тебе подсказку - это <span style="color:red;font-weight:bold;">BLUTENE</span>.';
 
     // Show question
     function showQuestion() {
@@ -152,7 +153,8 @@
       overlay.style.display = 'block';
       choicesDiv.innerHTML = '';
       if (i === correctIdx) {
-        dialogText.textContent = correctTip;
+        // -- CHANGE: use innerHTML to render markup!
+        dialogText.innerHTML = correctTip;
         const onInput = () => {
           cleanup(); overlay.style.display = 'none'; inDialog = false; interactionFinished = true; setupCollectible();
         };
