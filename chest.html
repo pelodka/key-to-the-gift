@@ -282,8 +282,9 @@
         chestAudio.addEventListener('ended', () => {
           overlay.style.display = 'block';
           inDialog = true;
-          dialogText.innerHTML =
-            'ПОЗДРАВЛЯЕМ С ДНЕМ РОЖДЕНИЯ! ВОТ ТУТ ТВОИ ПОДАРКИ!<br/><a href="#">https://www.dropbox.com/scl/fo/sxdd5av6abmt056n0bxum/AB-go8UkY4cgGymUURRjp2I?rlkey=gxyqwg9usl2mfaw4nhqfz3ldk&st=82rgybh1&dl=0</a>';
+  dialogText.innerHTML =
+    'ПОЗДРАВЛЯЕМ С ДНЕМ РОЖДЕНИЯ!<br/>' +
+    '<a href="https://www.dropbox.com/scl/fo/sxdd5av6abmt056n0bxum/AB-go8UkY4cgGymUURRjp2I?rlkey=gxyqwg9usl2mfaw4nhqfz3ldk&st=82rgybh1&dl=0" target="_blank" style="display:inline-block;margin-top:24px;font-size:32px;color:#fff;background:#1976d2;padding:14px 28px;text-decoration:none;border-radius:16px;font-weight:bold;box-shadow:0 4px 16px rgba(30,80,180,0.16);transition:background 0.2s;">ВОТ ТУТ ТВОИ ПОДАРКИ!</a>';
           boxContainer.innerHTML = '';
           openBtn.style.display = 'none';
           feedback.textContent = '';
