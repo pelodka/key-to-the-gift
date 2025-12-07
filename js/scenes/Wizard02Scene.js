@@ -187,9 +187,10 @@ function setupDragDrop() {
                 placedCount++;
                 if (placedCount === totalCount) finishPuzzle();
             } else {
-                dialogTextPuzzle.textContent = 'Что на это скажет Марк?';
-                gameContainer.classList.add('shake');
-                gameContainer.addEventListener('animationend', () => gameContainer.classList.remove('shake'), { once: true });
+                dialogTextPuzzle.innerHTML = '<span style="color: red;">Что на это скажет Марк?</span>';
+                const puzzleBox = overlayPuzzle.querySelector('.puzzle-box');
+                puzzleBox.classList.add('shake');
+                puzzleBox.addEventListener('animationend', () => puzzleBox.classList.remove('shake'), { once: true });
                 setTimeout(() => dialogTextPuzzle.textContent = '', 3000);
             }
         });
