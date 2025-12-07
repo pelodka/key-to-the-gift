@@ -46,7 +46,7 @@ export function createTouchControls(container, keys, options = {}) {
     let joystickActive = false;
     let joystickStartX = 0;
     let joystickStartY = 0;
-    const joystickMaxDistance = 40;
+    const joystickMaxDistance = 55;
 
     // Joystick touch handlers
     joystickBase.addEventListener('touchstart', (e) => {
@@ -185,24 +185,22 @@ export function addTouchDragDrop(element, container, onDrop, getDropTargets) {
         isDragging = true;
         const touch = e.touches[0];
         const rect = element.getBoundingClientRect();
-        const containerRect = container.getBoundingClientRect();
 
         startX = touch.clientX;
         startY = touch.clientY;
-        originalLeft = rect.left - containerRect.left;
-        originalTop = rect.top - containerRect.top;
 
-        // Create a visual clone for dragging
+        // Create a visual clone for dragging - use fixed positioning to follow finger
         clone = element.cloneNode(true);
         clone.className = element.className + ' dragging-clone';
-        clone.style.position = 'absolute';
-        clone.style.left = originalLeft + 'px';
-        clone.style.top = originalTop + 'px';
+        clone.style.position = 'fixed';
+        clone.style.left = (touch.clientX - rect.width / 2) + 'px';
+        clone.style.top = (touch.clientY - rect.height / 2) + 'px';
         clone.style.width = rect.width + 'px';
-        clone.style.zIndex = '1000';
-        clone.style.opacity = '0.8';
+        clone.style.zIndex = '10000';
+        clone.style.opacity = '0.9';
         clone.style.pointerEvents = 'none';
-        container.appendChild(clone);
+        clone.style.transform = 'scale(1.1)';
+        document.body.appendChild(clone);
 
         element.style.opacity = '0.3';
     }, { passive: false });
@@ -211,11 +209,11 @@ export function addTouchDragDrop(element, container, onDrop, getDropTargets) {
         if (!isDragging || !clone) return;
         e.preventDefault();
         const touch = e.touches[0];
-        const deltaX = touch.clientX - startX;
-        const deltaY = touch.clientY - startY;
+        const rect = element.getBoundingClientRect();
 
-        clone.style.left = (originalLeft + deltaX) + 'px';
-        clone.style.top = (originalTop + deltaY) + 'px';
+        // Center clone on finger
+        clone.style.left = (touch.clientX - parseFloat(clone.style.width) / 2) + 'px';
+        clone.style.top = (touch.clientY - 30) + 'px';
     }, { passive: false });
 
     document.addEventListener('touchend', (e) => {

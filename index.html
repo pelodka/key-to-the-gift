@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,10 +8,15 @@
   <meta name="description" content="An interactive birthday gift game - solve puzzles to unlock your presents!" />
   <link rel="stylesheet" href="css/main.css" />
   <script src="audio.js"></script>
+  <!-- Preload critical assets -->
+  <link rel="preload" href="background.png" as="image" />
+  <link rel="preload" href="player_idle.png" as="image" />
+  <link rel="preload" href="player_walk.png" as="image" />
 </head>
+
 <body>
   <div id="app"></div>
-  
+
   <script type="module">
     import sceneManager from './js/SceneManager.js';
     import StartScene from './js/scenes/StartScene.js';
@@ -19,11 +25,41 @@
     import Wizard02Scene from './js/scenes/Wizard02Scene.js';
     import Wizard03Scene from './js/scenes/Wizard03Scene.js';
     import ChestScene from './js/scenes/ChestScene.js';
-    
+
+    // Asset preloader
+    const assetsToPreload = [
+      'background.png',
+      'player_idle.png',
+      'player_walk.png',
+      'player_collects.png',
+      'player_hands.png',
+      'button01.png',
+      'gift_card_1.png',
+      'gift_card_2.png',
+      'dragon.png',
+      'wizard1.png',
+      'wizard2.png',
+      'wizard3.png',
+      'chest_closed.png',
+      'chest_opened.png'
+    ];
+
+    async function preloadAssets() {
+      const promises = assetsToPreload.map(src => {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.onload = resolve;
+          img.onerror = resolve; // Continue even if asset fails
+          img.src = src;
+        });
+      });
+      await Promise.all(promises);
+    }
+
     // Initialize the scene manager
     const app = document.getElementById('app');
     sceneManager.init(app);
-    
+
     // Register all scenes
     sceneManager.register('start', StartScene);
     sceneManager.register('scene2', Scene2);
@@ -31,7 +67,7 @@
     sceneManager.register('wizard02', Wizard02Scene);
     sceneManager.register('wizard03', Wizard03Scene);
     sceneManager.register('chest', ChestScene);
-    
+
     // Start BGM on Scene2 transition
     const originalLoadScene = sceneManager.loadScene.bind(sceneManager);
     sceneManager.loadScene = async (name, params) => {
@@ -40,9 +76,12 @@
       }
       return originalLoadScene(name, params);
     };
-    
-    // Load the start scene
-    sceneManager.loadScene('start');
+
+    // Preload assets then start the game
+    preloadAssets().then(() => {
+      sceneManager.loadScene('start');
+    });
   </script>
 </body>
+
 </html>
