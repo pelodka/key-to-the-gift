@@ -252,26 +252,55 @@ body {
   left: 0;
 }
 
-/* ===== Touch Controls ===== */
-.touch-controls {
+/* ===== Touch Controls (Mobile Joystick) ===== */
+.touch-controls-container {
   position: absolute;
-  bottom: 5vh;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 2vw;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 200px;
   pointer-events: none;
+  z-index: 200;
 }
 
-.touch-btn {
-  width: 12vw;
-  height: 12vw;
-  max-width: 80px;
-  max-height: 80px;
+.joystick-area {
+  position: absolute;
+  bottom: 30px;
+  left: 30px;
+  pointer-events: auto;
+}
+
+.joystick-base {
+  width: 120px;
+  height: 120px;
+  background: rgba(255, 255, 255, 0.3);
+  border: 3px solid rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+}
+
+.joystick-knob {
+  width: 50px;
+  height: 50px;
   background: rgba(255, 255, 255, 0.8);
   border: 2px solid #333;
   border-radius: 50%;
-  font-size: 4vw;
+  transition: transform 0.05s ease-out;
+}
+
+.jump-btn {
+  position: absolute;
+  bottom: 40px;
+  right: 40px;
+  width: 80px;
+  height: 80px;
+  background: rgba(255, 200, 100, 0.8);
+  border: 3px solid rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  font-size: 32px;
   line-height: 1;
   text-align: center;
   pointer-events: auto;
@@ -279,18 +308,25 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.1s, background 0.1s;
+  touch-action: none;
 }
 
-.touch-btn:active {
+.jump-btn:active {
   transform: scale(0.9);
-  background: rgba(200, 200, 200, 0.9);
+  background: rgba(255, 180, 80, 0.9);
 }
 
-#btn-interact {
-  background: rgba(255, 200, 100, 0.9);
-  font-weight: bold;
-  font-family: 'Arial Black', sans-serif;
+/* Dragging clone styles */
+.dragging-clone {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  transform: scale(1.05);
+}
+
+/* Selected state for touch drag-drop */
+.draggable-box.selected {
+  outline: 3px solid #fff;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+  transform: scale(1.1);
 }
 
 /* ===== Collectible Blocks ===== */

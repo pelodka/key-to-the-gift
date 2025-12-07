@@ -6,7 +6,7 @@
 import sceneManager from '../SceneManager.js';
 import GameState from '../GameState.js';
 import { PLAYER_WIDTH, createPhysicsState, applyGravity, handleMovement, handleJump, updatePlayerPosition, getSpawnPosition } from '../utils/physics.js';
-import { createTouchControls } from '../utils/touchControls.js';
+import { createTouchControls, makeNpcTappable, setPromptText } from '../utils/touchControls.js';
 
 let player, gameContainer, prompt, overlay, greetBox, puzzleBox, wizardMsg, errorText;
 let physics, keys, isJumping, jumpSpeed, interactionFinished, waitingBlock, puzzleSolved, blockSpawned, animationId;
@@ -66,12 +66,36 @@ function render(container) {
     player.style.left = physics.posX + 'px';
     player.style.bottom = '80px';
 
-    // Add touch controls with interact button
-    createTouchControls(container, keys, { includeJump: true, includeInteract: true });
+    // Add touch controls (joystick + jump)
+    createTouchControls(container, keys, { includeJump: true });
+
+    // Make wizard tappable on mobile
+    const wizard = container.querySelector('#wizard');
+    makeNpcTappable(wizard, handleInteraction, () => {
+        const wizardX = (gameContainer.clientWidth - 320) / 2;
+        const near = Math.abs(player.offsetLeft - wizardX) < 192;
+        return near && !waitingBlock;
+    });
+
+    // Update prompt text for mobile
+    setPromptText(prompt, 'Press E', 'Tap');
 
     setupEventListeners();
     setupPuzzleAnswers();
     startGameLoop();
+}
+
+// Shared interaction handler for both keyboard and touch
+function handleInteraction() {
+    window.audio.playInteract();
+    const wizardX = (gameContainer.clientWidth - 320) / 2;
+    const near = Math.abs(player.offsetLeft - wizardX) < 192;
+
+    if (!interactionFinished && near) {
+        startPlaceholder();
+    } else if (puzzleSolved && near) {
+        showFinalDialog();
+    }
 }
 
 function setupEventListeners() {
@@ -84,15 +108,7 @@ function handleKeyDown(e) {
     keys[key] = true;
 
     if (key === 'e') {
-        window.audio.playInteract();
-        const wizardX = (gameContainer.clientWidth - 320) / 2;
-        const near = Math.abs(player.offsetLeft - wizardX) < 192;
-
-        if (!interactionFinished && near) {
-            startPlaceholder();
-        } else if (puzzleSolved && near) {
-            showFinalDialog();
-        }
+        handleInteraction();
     }
 
     if (puzzleSolved) {
@@ -118,10 +134,16 @@ function startPlaceholder() {
     function ack() {
         greetBox.style.display = 'none';
         puzzleBox.style.display = 'block';
+        overlay.removeEventListener('click', ack);
+        document.removeEventListener('keydown', ack);
+        document.removeEventListener('touchstart', ack);
     }
 
-    overlay.addEventListener('click', ack, { once: true });
-    document.addEventListener('keydown', ack, { once: true });
+    setTimeout(() => {
+        overlay.addEventListener('click', ack, { once: true });
+        document.addEventListener('keydown', ack, { once: true });
+        document.addEventListener('touchstart', ack, { once: true });
+    }, 100);
 }
 
 function setupPuzzleAnswers() {
@@ -152,11 +174,17 @@ function setupPuzzleAnswers() {
 
                 function ackWizard() {
                     wizardMsg.style.display = 'none';
+                    wizardMsg.removeEventListener('click', ackWizard);
+                    document.removeEventListener('keydown', ackWizard);
+                    document.removeEventListener('touchstart', ackWizard);
                     if (!blockSpawned) setupCollectible();
                 }
 
-                wizardMsg.addEventListener('click', ackWizard, { once: true });
-                document.addEventListener('keydown', ackWizard, { once: true });
+                setTimeout(() => {
+                    wizardMsg.addEventListener('click', ackWizard, { once: true });
+                    document.addEventListener('keydown', ackWizard, { once: true });
+                    document.addEventListener('touchstart', ackWizard, { once: true });
+                }, 100);
             }
         });
     });
@@ -192,8 +220,19 @@ function setupCollectible() {
 function showFinalDialog() {
     wizardMsg.innerHTML = 'Отлично! Осталось совсем чуть-чуть! Не отступай!';
     wizardMsg.style.display = 'block';
-    wizardMsg.addEventListener('click', () => { wizardMsg.style.display = 'none'; }, { once: true });
-    document.addEventListener('keydown', () => { wizardMsg.style.display = 'none'; }, { once: true });
+
+    function hideMsg() {
+        wizardMsg.style.display = 'none';
+        wizardMsg.removeEventListener('click', hideMsg);
+        document.removeEventListener('keydown', hideMsg);
+        document.removeEventListener('touchstart', hideMsg);
+    }
+
+    setTimeout(() => {
+        wizardMsg.addEventListener('click', hideMsg, { once: true });
+        document.addEventListener('keydown', hideMsg, { once: true });
+        document.addEventListener('touchstart', hideMsg, { once: true });
+    }, 100);
 }
 
 function checkProximity() {
@@ -204,24 +243,6 @@ function checkProximity() {
 }
 
 function gameLoop() {
-    // Handle touch E button interaction
-    if (keys['e'] && !interactPressed) {
-        interactPressed = true;
-        const wizardX = (gameContainer.clientWidth - 320) / 2;
-        const near = Math.abs(player.offsetLeft - wizardX) < 192;
-
-        if (near) {
-            window.audio.playInteract();
-            if (!interactionFinished) {
-                startPlaceholder();
-            } else if (puzzleSolved) {
-                showFinalDialog();
-            }
-        }
-    }
-    if (!keys['e']) {
-        interactPressed = false;
-    }
 
     if (!waitingBlock) {
         if (keys['arrowleft'] || keys['a']) {

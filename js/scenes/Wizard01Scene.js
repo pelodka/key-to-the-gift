@@ -6,7 +6,7 @@
 import sceneManager from '../SceneManager.js';
 import GameState from '../GameState.js';
 import { PLAYER_WIDTH, createPhysicsState, applyGravity, handleMovement, handleJump, updatePlayerPosition, getSpawnPosition } from '../utils/physics.js';
-import { createTouchControls } from '../utils/touchControls.js';
+import { createTouchControls, makeNpcTappable, setPromptText, isMobileDevice } from '../utils/touchControls.js';
 
 let player, gameContainer, prompt, overlay, dialogText, choicesDiv, minigameUI, minigameScore;
 let physics, keys, inDialog, interactionFinished, waitingBlock, puzzleSolved, minigameActive, animationId;
@@ -58,8 +58,19 @@ function render(container) {
     minigameUI = container.querySelector('#minigame-ui');
     minigameScore = container.querySelector('#minigame-score');
 
-    // Add touch controls with interact button
-    createTouchControls(container, keys, { includeJump: true, includeInteract: true });
+    // Add touch controls (joystick + jump)
+    createTouchControls(container, keys, { includeJump: true });
+
+    // Make wizard tappable on mobile
+    const wizard = container.querySelector('#wizard');
+    makeNpcTappable(wizard, handleInteraction, () => {
+        const wizardX = (gameContainer.clientWidth - PLAYER_WIDTH) / 2;
+        const near = Math.abs(physics.posX - wizardX) < PLAYER_WIDTH * 0.6;
+        return near && !minigameActive;
+    });
+
+    // Update prompt text for mobile
+    setPromptText(prompt, 'Press E', 'Tap');
 
     setupEventListeners();
     updatePlayerPosition(player, physics);
@@ -71,20 +82,25 @@ function setupEventListeners() {
     document.addEventListener('keyup', handleKeyUp);
 }
 
+// Shared interaction handler for both keyboard and touch
+function handleInteraction() {
+    window.audio.playInteract();
+    if (!interactionFinished) {
+        startDialog();
+    } else if (!waitingBlock) {
+        overlay.style.display = 'block';
+        dialogText.textContent = 'ЙЕЕЕ РОЦК! Можешь идти дальше!';
+        choicesDiv.innerHTML = '';
+        setTimeout(() => overlay.style.display = 'none', 2000);
+    }
+}
+
 function handleKeyDown(e) {
     const key = e.key.toLowerCase();
     keys[key] = true;
 
     if (key === 'e' && prompt.style.display === 'block' && !minigameActive) {
-        window.audio.playInteract();
-        if (!interactionFinished) {
-            startDialog();
-        } else if (!waitingBlock) {
-            overlay.style.display = 'block';
-            dialogText.textContent = 'ЙЕЕЕ РОЦК! Можешь идти дальше!';
-            choicesDiv.innerHTML = '';
-            setTimeout(() => overlay.style.display = 'none', 2000);
-        }
+        handleInteraction();
     }
 
     if (puzzleSolved) {
@@ -117,12 +133,16 @@ function startDialog() {
     const cleanup_listeners = () => {
         window.removeEventListener('keydown', proceed);
         window.removeEventListener('mousedown', proceed);
+        window.removeEventListener('touchstart', proceed);
+        overlay.removeEventListener('click', proceed);
     };
 
     setTimeout(() => {
         window.addEventListener('keydown', proceed);
         window.addEventListener('mousedown', proceed);
-    }, 0);
+        window.addEventListener('touchstart', proceed);
+        overlay.addEventListener('click', proceed);
+    }, 100);
 }
 
 function startMiniGame() {
@@ -238,10 +258,16 @@ function showBLUTEGETip() {
     const cleanup_handlers = () => {
         window.removeEventListener('keydown', onInput);
         window.removeEventListener('mousedown', onInput);
+        window.removeEventListener('touchstart', onInput);
+        overlay.removeEventListener('click', onInput);
     };
 
-    window.addEventListener('keydown', onInput);
-    window.addEventListener('mousedown', onInput);
+    setTimeout(() => {
+        window.addEventListener('keydown', onInput);
+        window.addEventListener('mousedown', onInput);
+        window.addEventListener('touchstart', onInput);
+        overlay.addEventListener('click', onInput);
+    }, 100);
 }
 
 function setupCollectible() {
@@ -282,22 +308,6 @@ function checkProximity() {
 }
 
 function gameLoop() {
-    // Handle touch E button interaction
-    if (keys['e'] && !interactPressed && prompt.style.display === 'block' && !minigameActive) {
-        interactPressed = true;
-        window.audio.playInteract();
-        if (!interactionFinished) {
-            startDialog();
-        } else if (!waitingBlock) {
-            overlay.style.display = 'block';
-            dialogText.textContent = 'ЙЕЕЕ РОЦК! Можешь идти дальше!';
-            choicesDiv.innerHTML = '';
-            setTimeout(() => overlay.style.display = 'none', 2000);
-        }
-    }
-    if (!keys['e']) {
-        interactPressed = false;
-    }
 
     if (!inDialog && !waitingBlock && !minigameActive) {
         handleMovement(physics, keys, LEFT_LIMIT, RIGHT_LIMIT);

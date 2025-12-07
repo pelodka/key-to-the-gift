@@ -6,7 +6,7 @@
 import sceneManager from '../SceneManager.js';
 import GameState from '../GameState.js';
 import { PLAYER_WIDTH, createPhysicsState, applyGravity, handleMovement, handleJump, updatePlayerPosition, getSpawnPosition } from '../utils/physics.js';
-import { createTouchControls } from '../utils/touchControls.js';
+import { createTouchControls, makeNpcTappable, setPromptText, addTouchDragDrop } from '../utils/touchControls.js';
 
 let player, gameContainer, prompt, overlayPuzzle, dialogName, dialogTextPuzzle, blocksDiv;
 let rejectContainer, approveContainer, rejectArea, approveArea;
@@ -92,12 +92,35 @@ function render(container) {
     player.style.left = physics.posX + 'px';
     player.style.bottom = '80px';
 
-    // Add touch controls with interact button
-    createTouchControls(container, keys, { includeJump: true, includeInteract: true });
+    // Add touch controls (joystick + jump)
+    createTouchControls(container, keys, { includeJump: true });
+
+    // Make wizard tappable on mobile
+    const wizard = container.querySelector('#wizard');
+    makeNpcTappable(wizard, handleInteraction, () => {
+        const wizardX = (gameContainer.clientWidth - 320) / 2;
+        const near = Math.abs(player.offsetLeft - wizardX) < 192;
+        return near && !waitingBlock;
+    });
+
+    // Update prompt text for mobile
+    setPromptText(prompt, 'Press E', 'Tap');
 
     setupEventListeners();
     setupDragDrop();
     startGameLoop();
+}
+
+// Shared interaction handler for both keyboard and touch
+function handleInteraction() {
+    window.audio.playInteract();
+    if (!interactionFinished) {
+        startDialog();
+    } else if (!waitingBlock) {
+        overlayPuzzle.style.display = 'block';
+        dialogTextPuzzle.textContent = 'Иди же дальше!';
+        setTimeout(() => overlayPuzzle.style.display = 'none', 2000);
+    }
 }
 
 function setupEventListeners() {
@@ -109,14 +132,7 @@ function handleKeyDown(e) {
     keys[e.key.toLowerCase()] = true;
 
     if (e.key.toLowerCase() === 'e') {
-        window.audio.playInteract();
-        if (!interactionFinished) {
-            startDialog();
-        } else if (!waitingBlock) {
-            overlayPuzzle.style.display = 'block';
-            dialogTextPuzzle.textContent = 'Иди же дальше!';
-            setTimeout(() => overlayPuzzle.style.display = 'none', 2000);
-        }
+        handleInteraction();
     }
 
     if (puzzleSolved) {
@@ -144,11 +160,17 @@ function startDialog() {
         if (e.type === 'keydown' && e.key.toLowerCase() === 'e') return;
         window.removeEventListener('keydown', proceed);
         window.removeEventListener('mousedown', proceed);
+        window.removeEventListener('touchstart', proceed);
+        overlayPuzzle.removeEventListener('click', proceed);
         showPuzzle();
     };
 
-    window.addEventListener('keydown', proceed);
-    window.addEventListener('mousedown', proceed);
+    setTimeout(() => {
+        window.addEventListener('keydown', proceed);
+        window.addEventListener('mousedown', proceed);
+        window.addEventListener('touchstart', proceed);
+        overlayPuzzle.addEventListener('click', proceed);
+    }, 100);
 }
 
 function showPuzzle() {
@@ -163,6 +185,30 @@ function showPuzzle() {
         d.draggable = true;
         d.id = 'block' + i;
         d.addEventListener('dragstart', e => e.dataTransfer.setData('text/plain', d.id));
+
+        // Add touch drag-drop support
+        addTouchDragDrop(d, overlayPuzzle, (block, dropTarget) => {
+            if (!dropTarget) return;
+            const area = dropTarget.closest('.drop-area');
+            if (!area) return;
+
+            const correct = (area === rejectArea)
+                ? rejectSet.has(block.textContent)
+                : !rejectSet.has(block.textContent);
+
+            if (correct) {
+                block.remove();
+                placedCount++;
+                if (placedCount === totalCount) finishPuzzle();
+            } else {
+                dialogTextPuzzle.innerHTML = '<span style="color: red;">Что на это скажет Марк?</span>';
+                const puzzleBox = overlayPuzzle.querySelector('.puzzle-box');
+                puzzleBox.classList.add('shake');
+                puzzleBox.addEventListener('animationend', () => puzzleBox.classList.remove('shake'), { once: true });
+                setTimeout(() => dialogTextPuzzle.textContent = '', 3000);
+            }
+        }, () => [rejectArea, approveArea]);
+
         blocksDiv.appendChild(d);
     });
 
@@ -208,14 +254,20 @@ function finishPuzzle() {
         if (e.type === 'keydown' && e.key.toLowerCase() === 'e') return;
         window.removeEventListener('keydown', proceed);
         window.removeEventListener('mousedown', proceed);
+        window.removeEventListener('touchstart', proceed);
+        overlayPuzzle.removeEventListener('click', proceed);
         overlayPuzzle.style.display = 'none';
         setupCollectible();
         puzzleSolved = true;
         GameState.completePuzzle('wizard02');
     };
 
-    window.addEventListener('keydown', proceed);
-    window.addEventListener('mousedown', proceed);
+    setTimeout(() => {
+        window.addEventListener('keydown', proceed);
+        window.addEventListener('mousedown', proceed);
+        window.addEventListener('touchstart', proceed);
+        overlayPuzzle.addEventListener('click', proceed);
+    }, 100);
 }
 
 function setupCollectible() {
@@ -250,21 +302,6 @@ function checkProximity() {
 }
 
 function gameLoop() {
-    // Handle touch E button interaction
-    if (keys['e'] && !interactPressed) {
-        interactPressed = true;
-        window.audio.playInteract();
-        if (!interactionFinished) {
-            startDialog();
-        } else if (!waitingBlock) {
-            overlayPuzzle.style.display = 'block';
-            dialogTextPuzzle.textContent = 'Иди же дальше!';
-            setTimeout(() => overlayPuzzle.style.display = 'none', 2000);
-        }
-    }
-    if (!keys['e']) {
-        interactPressed = false;
-    }
 
     if (!waitingBlock) {
         if (keys['arrowleft'] || keys['a']) {

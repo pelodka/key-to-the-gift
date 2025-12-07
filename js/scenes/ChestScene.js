@@ -6,7 +6,7 @@
 import sceneManager from '../SceneManager.js';
 import GameState from '../GameState.js';
 import { PLAYER_WIDTH, createPhysicsState, applyGravity, handleMovement, handleJump, updatePlayerPosition, getSpawnPosition } from '../utils/physics.js';
-import { createTouchControls } from '../utils/touchControls.js';
+import { createTouchControls, makeNpcTappable, setPromptText, addTouchDragDrop } from '../utils/touchControls.js';
 
 let player, gameContainer, prompt, overlay, dialogText, boxContainer, openBtn, feedback, wizardImg;
 let physics, keys, isJumping, jumpSpeed, puzzleSolved, inDialog, dragData, animationId;
@@ -69,11 +69,29 @@ function render(container) {
     player.style.left = physics.posX + 'px';
     player.style.bottom = '80px';
 
-    // Add touch controls with interact button
-    createTouchControls(container, keys, { includeJump: true, includeInteract: true });
+    // Add touch controls (joystick + jump)
+    createTouchControls(container, keys, { includeJump: true });
+
+    // Make chest tappable on mobile
+    const chest = container.querySelector('#wizard');
+    makeNpcTappable(chest, handleInteraction, () => {
+        const chestX = (gameContainer.clientWidth - PLAYER_WIDTH) / 2;
+        const near = Math.abs(player.offsetLeft - chestX) < PLAYER_WIDTH * 0.6;
+        return near && !inDialog && !puzzleSolved;
+    });
+
+    // Update prompt text for mobile
+    setPromptText(prompt, 'Press E', 'Tap');
 
     setupEventListeners();
     startGameLoop();
+}
+
+// Shared interaction handler for both keyboard and touch
+function handleInteraction() {
+    if (puzzleSolved || inDialog) return;
+    window.audio.playInteract();
+    startDialog();
 }
 
 function setupEventListeners() {
@@ -87,8 +105,7 @@ function handleKeyDown(e) {
     keys[e.key.toLowerCase()] = true;
 
     if (e.key.toLowerCase() === 'e' && prompt.style.display === 'block' && !inDialog) {
-        window.audio.playInteract();
-        startDialog();
+        handleInteraction();
     }
 }
 
@@ -111,12 +128,16 @@ function startDialog() {
     function proceed() {
         overlay.removeEventListener('click', proceed);
         document.removeEventListener('keydown', proceed);
+        document.removeEventListener('touchstart', proceed);
         dialogText.innerHTML = 'Aus der <span class="drop-target" data-index="0"></span> der Knechtschaft durch <span class="drop-target" data-index="1"></span> Schlachten ans <span class="drop-target" data-index="2"></span> Licht der Freiheit.';
         setupPuzzle();
     }
 
-    overlay.addEventListener('click', proceed, { once: true });
-    document.addEventListener('keydown', proceed, { once: true });
+    setTimeout(() => {
+        overlay.addEventListener('click', proceed, { once: true });
+        document.addEventListener('keydown', proceed, { once: true });
+        document.addEventListener('touchstart', proceed, { once: true });
+    }, 100);
 }
 
 function createBox(color) {
@@ -129,6 +150,17 @@ function createBox(color) {
         feedback.textContent = '';
         dragData = { color, from: 'box' };
     });
+
+    // Touch support: tap to select
+    box.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        feedback.textContent = '';
+        // Clear previous selection
+        document.querySelectorAll('.draggable-box.selected').forEach(b => b.classList.remove('selected'));
+        box.classList.add('selected');
+        dragData = { color, from: 'box', element: box };
+    }, { passive: false });
+
     return box;
 }
 
@@ -165,18 +197,7 @@ function setupPuzzle() {
 
         target.addEventListener('drop', e => {
             e.preventDefault();
-            const prev = target.dataset.filled;
-            if (prev) boxContainer.appendChild(createBox(prev));
-            const { color, from } = dragData;
-            target.textContent = words[color];
-            target.style.color = color;
-            target.dataset.filled = color;
-            if (from === 'box') {
-                const orig = boxContainer.querySelector(`.draggable-box[data-color="${color}"]`);
-                if (orig) orig.remove();
-            }
-            checkAllFilled();
-            dragData = null;
+            handleDropOnTarget(target);
         });
 
         target.addEventListener('dragend', () => {
@@ -186,7 +207,46 @@ function setupPuzzle() {
                 dragData = null;
             }
         });
+
+        // Touch support: tap to place selected box
+        target.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (dragData && (dragData.from === 'box' || dragData.from === 'target')) {
+                handleDropOnTarget(target);
+                // Clear selection
+                document.querySelectorAll('.draggable-box.selected').forEach(b => b.classList.remove('selected'));
+            } else if (target.dataset.filled) {
+                // Tap on filled target to pick it up
+                const color = target.dataset.filled;
+                dragData = { color, from: 'target' };
+                target.textContent = '';
+                delete target.dataset.filled;
+                // Create a new box in the container
+                boxContainer.appendChild(createBox(color));
+                checkAllFilled();
+            }
+        }, { passive: false });
     });
+}
+
+function handleDropOnTarget(target) {
+    if (!dragData) return;
+    const prev = target.dataset.filled;
+    if (prev) boxContainer.appendChild(createBox(prev));
+    const { color, from, element } = dragData;
+    target.textContent = words[color];
+    target.style.color = color;
+    target.dataset.filled = color;
+    if (from === 'box') {
+        if (element) {
+            element.remove();
+        } else {
+            const orig = boxContainer.querySelector(`.draggable-box[data-color="${color}"]`);
+            if (orig) orig.remove();
+        }
+    }
+    checkAllFilled();
+    dragData = null;
 }
 
 function checkAllFilled() {
